@@ -2,24 +2,14 @@ abstract class InternetAwareActivity : AppCompatActivity() {
     var enableNetworkCapabilitiesCallback = true
     var enableInternetAvailabilityCallback = true
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        lifecycleScope.launch {
-            repeatOnLifecycle(RESUMED) {
-                if (enableInternetAvailabilityCallback) {
-                    pollInternetAvailability()
-                    detectInternetAvailabilityJob?.join()
-                }
-            }
-        }
-    }
-
     override fun onResume() {
         super.onResume()
         if (enableNetworkCapabilitiesCallback)
             registerNetworkCapabilitiesCallback()
-        if (enableInternetAvailabilityCallback)
+        if (enableInternetAvailabilityCallback) {
             registerInternetAvailabilityCallback()
+            pollInternetAvailability()
+        }
     }
 
     override fun onStop() {
