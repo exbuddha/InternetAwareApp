@@ -70,8 +70,8 @@ private var listener: NetworkCallback? = null
                 your.module.networkCapabilities?.get(),
                 network,
                 networkCapabilities)
-            media.player.network = WeakReference(network)
-            media.player.networkCapabilities = WeakReference(networkCapabilities)
+            your.module.network = WeakReference(network)
+            your.module.networkCapabilities = WeakReference(networkCapabilities)
         }
     }.also { field = it }
 
