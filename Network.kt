@@ -63,15 +63,13 @@ val hasWifi
 
 private var listener: NetworkCallback? = null
     get() = field ?: object : NetworkCallback() {
-        override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
-            super.onCapabilitiesChanged(network, networkCapabilities)
+        override fun onCapabilitiesChanged(newNetwork: Network, newNetworkCapabilities: NetworkCapabilities) {
+            super.onCapabilitiesChanged(newNetwork, newNetworkCapabilities)
             app.reactToNetworkCapabilitiesChanged(
-                your.module.network?.get(),
-                your.module.networkCapabilities?.get(),
-                network,
-                networkCapabilities)
-            your.module.network = WeakReference(network)
-            your.module.networkCapabilities = WeakReference(networkCapabilities)
+                network?.get(), networkCapabilities?.get(),
+                newNetwork, newNetworkCapabilities)
+            network = WeakReference(newNetwork)
+            networkCapabilities = WeakReference(newNetworkCapabilities)
         }
     }.also { field = it }
 
