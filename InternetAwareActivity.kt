@@ -4,8 +4,14 @@ abstract class InternetAwareActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (enableInternetAvailabilityCallback)
-            pollInternetAvailability()
+        if (enableInternetAvailabilityCallback) {
+            lifecycleScope.launch {
+                repeatOnLifecycle(RESUMED) {
+                    pollInternetAvailability()
+                    detectInternetAvailabilityJob?.join()
+                }
+            }
+        }
     }
 
     override fun onResume() {
@@ -28,15 +34,13 @@ abstract class InternetAwareActivity : AppCompatActivity() {
     private var repeatInternetAvailabilityTest = true
     private var testInternetAvailabilityDelay = 1000L
 
-    private fun pollInternetAvailability(state: Lifecycle.State = RESUMED) {
+    private fun pollInternetAvailability() {
         if (!isInternetAvailabilityCallbackActive) {
             detectInternetAvailabilityJob = lifecycleScope.launch(Dispatchers.IO) {
-                repeatOnLifecycle(state) {
+                repeatInternetAvailabilityTest()
+                while (isActive) {
+                    delay(testInternetAvailabilityDelay)
                     repeatInternetAvailabilityTest()
-                    while (isActive) {
-                        delay(testInternetAvailabilityDelay)
-                        repeatInternetAvailabilityTest()
-                    }
                 }
             }
         }
