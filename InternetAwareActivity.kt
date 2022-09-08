@@ -4,9 +4,9 @@ abstract class InternetAwareActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (enableInternetAvailabilityCallback) {
-            lifecycleScope.launch {
-                repeatOnLifecycle(RESUMED) {
+        lifecycleScope.launch {
+            repeatOnLifecycle(RESUMED) {
+                if (enableInternetAvailabilityCallback) {
                     pollInternetAvailability()
                     detectInternetAvailabilityJob?.join()
                 }
