@@ -5,3 +5,5 @@ val permissions
 
 fun <R> trySafely(block: () -> R): R? = try { block() } catch(_: Throwable) { null }
 fun <R> trySafely(fallback: R, block: () -> R) = try { block() } catch(_: Throwable) { fallback }
+
+fun now() = Calendar.getInstance().timeInMillis

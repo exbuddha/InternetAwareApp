@@ -89,11 +89,8 @@ class InternetAwareApp : Application() {
             set(value) {
                 if (value == 0L || value > field) field = value
             }
-
-        fun isInternetAvailabilityTimeIntervalExceeded(last: Long = lastInternetAvailabilityTestTime) =
-            isTimeIntervalExceeded(internetAvailabilityTimeInterval, last)
-
-        fun now() = Calendar.getInstance().timeInMillis
+        val isInternetAvailabilityTimeIntervalExceeded
+            get() = isTimeIntervalExceeded(internetAvailabilityTimeInterval, lastInternetAvailabilityTestTime)
         fun isTimeIntervalExceeded(interval: Long, last: Long) =
             (now() - last).let { it >= interval || it < 0 } || last == 0L
 
