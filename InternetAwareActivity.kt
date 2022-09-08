@@ -48,7 +48,7 @@ abstract class InternetAwareActivity : AppCompatActivity() {
         }
 
     private fun detectInternetAvailabilityChanged() {
-        if (isInternetAvailabilityTimeIntervalExceeded(lastInternetAvailabilityTestTime)) {
+        if (isInternetAvailabilityTimeIntervalExceeded()) {
             InternetAvailability.postChange(trySafely {
                 isConnected && runInternetAvailabilityTest().let { response ->
                     response.isSuccessful.also {
