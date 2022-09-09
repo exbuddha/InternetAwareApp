@@ -99,11 +99,11 @@ abstract class InternetAwareActivity : AppCompatActivity() {
 
     open fun runInternetAvailabilityTest() = app.runInternetAvailabilityTest()
 
-    open fun reactToInternetAvailabilityChanged() = app.reactToInternetAvailabilityChanged()
+    open fun reactToInternetAvailabilityChanged(state: Boolean?) = app.reactToInternetAvailabilityChanged()
 
     var internetAvailabilityObserver: Observer<Boolean?>? = null
         get() = field ?: InternetAvailabilityObserver {
-            reactToInternetAvailabilityChanged()
+            reactToInternetAvailabilityChanged(it)
         }.also { field = it }
 
     protected open inner class InternetAvailabilityObserver(
