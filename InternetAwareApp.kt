@@ -54,23 +54,14 @@ class InternetAwareApp : Application() {
 
     private fun updateNetworkState() {
         runBlocking {
-            networkStateDao.updateNetworkState(
-                isConnected,
-                hasInternet,
-                InternetAvailability.isExternallyDisconnected,
-                hasWifi,
-                hasMobile)
+            networkStateDao.updateNetworkState()
             Log.i(DB_TAG, "Updated network state.")
         }
     }
 
     private fun updateNetworkCapabilities(networkCapabilities: NetworkCapabilities) {
         runBlocking {
-            networkCapabilitiesDao.updateNetworkCapabilities(
-                networkCapabilities.capabilities.toJson(),
-                networkCapabilities.linkDownstreamBandwidthKbps,
-                networkCapabilities.linkUpstreamBandwidthKbps,
-                networkCapabilities.signalStrength)
+            networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities)
             Log.i(DB_TAG, "Updated network capabilities.")
         }
     }

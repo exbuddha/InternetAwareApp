@@ -44,12 +44,12 @@ abstract class InternetAwareActivity : AppCompatActivity() {
     private var lastInternetAvailabilityTestTime = 0L
         set(value) {
             field = value
-            InternetAwareApp.lastInternetAvailabilityTestTime = value
+            InternetAwareActivity.lastInternetAvailabilityTestTime = value
         }
 
     private fun detectInternetAvailabilityChanged() {
         if (isInternetAvailabilityTimeIntervalExceeded) {
-            InternetAvailability.postChange(trySafely {
+            InternetAvailability.postValue(trySafely {
                 isConnected && runInternetAvailabilityTest().let { response ->
                     response.isSuccessful.also {
                         if (it) {
@@ -101,12 +101,12 @@ abstract class InternetAwareActivity : AppCompatActivity() {
 
     open fun reactToInternetAvailabilityChanged() = app.reactToInternetAvailabilityChanged()
 
-    var internetAvailabilityObserver: Observer<Unit>? = null
+    var internetAvailabilityObserver: Observer<Boolean?>? = null
         get() = field ?: InternetAvailabilityObserver {
             reactToInternetAvailabilityChanged()
         }.also { field = it }
 
     protected open inner class InternetAvailabilityObserver(
-        block: InternetAwareActivity.() -> Unit
-    ) : LifecycleOwnerObserver<InternetAwareActivity>(this, block)
+        block: InternetAwareActivity.(Boolean?) -> Unit
+    ) : LifecycleOwnerObserver<InternetAwareActivity, Boolean?>(this, block)
 }

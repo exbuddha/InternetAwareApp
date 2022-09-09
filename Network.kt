@@ -1,59 +1,17 @@
-object InternetAvailability : StatefulLiveData<Boolean>(false) {
-    init {
-        ref = isPermitted && isConnected
-    }
-
-    var isExternallyDisconnected = false
-        get() = isNotResolved
-        set(value) {
-            field = value
-            if (value) reset()
-        }
-
-    fun postExternallyDisconnected() {
-        if (isResolved) {
-            isExternallyDisconnected = true
-            postChange()
-        }
-    }
-
-    fun postExternallyReconnected() {
-        if (ref != true) {
-            accept(true)
-            postChange()
-        }
-    }
-
-    fun postInternallyDisconnected() {
-        if (ref != false) {
-            accept(false)
-            postChange()
-        }
-    }
-
-    override fun postChange(value: Boolean?) {
-        when {
-            value === null -> postExternallyDisconnected()
-            value -> postExternallyReconnected()
-            else -> postInternallyDisconnected()
-        }
-    }
-
-    override fun equals(other: Any?) = ((other === null && isNotResolved) || other == ref) || super.equals(other)
-}
-
-val isPermitted by lazy {
-    permissions?.let {
-        it.contains(ACCESS_NETWORK_STATE) &&
-        it.contains(INTERNET)
-    } ?: false
+object InternetAvailability : DifferenceLiveData<Boolean?>(isPermitted && isConnected) {
+    fun postExternallyDisconnected() = postValue(null)
+    fun postExternallyReconnected() = postValue(true)
+    fun postInternallyDisconnected() = postValue(false)
 }
 
 val isConnected
     get() = networkCapabilities?.get()?.canSatisfy(connectivityRequest!!) ?: false
 
 val hasInternet
-    get() = InternetAvailability.state
+    get() = InternetAvailability.value ?: false
+
+val hasRemote
+    get() = InternetAvailability.value == true
 
 val hasMobile
     get() = networkCapabilities?.get()?.hasTransport(TRANSPORT_CELLULAR) ?: false

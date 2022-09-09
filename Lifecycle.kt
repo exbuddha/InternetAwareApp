@@ -1,47 +1,28 @@
-open class ReferenceLiveData<T>(protected open var ref: T?) : LiveData<Unit>() {
-    open val isResolved
-        get() = ref !== null
+open class VolatileLiveData<T>(private var ref: T) : MutableLiveData<T>() {
+    override fun postValue(value: T) {
+        setValue(value)
+        super.postValue(value)
+    }
 
-    open val isNotResolved
-        get() = ref === null
-
-    open fun postChange(value: T?) {
+    override fun setValue(value: T) {
         ref = value
-        postChange()
     }
 
-    open fun postChange() {
-        super.postValue(Unit)
-    }
-
-    open fun reset() {
-        ref = null
-    }
+    fun postChange() = postValue(ref)
 }
 
-open class DifferenceLiveData<T>(ref: T?) : ReferenceLiveData<T>(ref) {
-    constructor() : this(null)
-
-    override fun postChange(value: T?) {
-        if (ref != value) super.postChange(value)
-    }
-}
-
-abstract class StatefulLiveData<T>(protected open var fallback: T) : DifferenceLiveData<T>() {
-    open val state
-        get() = ref ?: fallback
-
-    open fun accept(state: T) {
-        ref = state
+open class DifferenceLiveData<T>(ref: T) : VolatileLiveData<T>(ref) {
+    override fun postValue(value: T) {
+        if (this.value != value) super.postValue(value)
     }
 }
 
 /** WARNING: memory leak! */
-abstract class LifecycleOwnerObserver<out T : LifecycleOwner>(
+abstract class LifecycleOwnerObserver<out T : LifecycleOwner, R>(
     private val receiver: T,
-    private val block: T.() -> Unit
-) : Observer<Unit> {
-    override fun onChanged(t: Unit?) {
-        receiver.block()
+    private val block: T.(R) -> Unit
+) : Observer<R> {
+    override fun onChanged(t: R) {
+        receiver.block(t)
     }
 }
