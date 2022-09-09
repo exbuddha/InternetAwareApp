@@ -1,31 +1,59 @@
 abstract class InternetAwareActivity : AppCompatActivity() {
     var enableNetworkCapabilitiesCallback = true
+        get() = field && isInternetAccessPermitted
     var enableInternetAvailabilityCallback = true
+        get() = field && isInternetAccessPermitted
 
     override fun onResume() {
         super.onResume()
         if (enableNetworkCapabilitiesCallback)
             registerNetworkCapabilitiesCallback()
-        if (enableInternetAvailabilityCallback) {
+        if (enableInternetAvailabilityCallback)
             registerInternetAvailabilityCallback()
-            pollInternetAvailability()
-        }
     }
 
     override fun onStop() {
         unregisterNetworkCapabilitiesCallback()
         unregisterInternetAvailabilityCallback()
+        internetAvailabilityLiveData = null
         internetAvailabilityObserver = null
         clearNetworkCapabilitiesObjects()
         super.onStop()
     }
 
+    private var internetAvailabilityLiveData: MutableLiveData<Boolean?>? = null
+        get() = field ?: object : DifferenceLiveData<Boolean?>() {
+            override fun postValue(value: Boolean?) {
+                hasInternet = value != false
+                super.postValue(value)
+            }
+
+            override fun observe(owner: LifecycleOwner, observer: Observer<in Boolean?>) {
+                restartInternetAvailabilityCallback()
+                super.observe(owner, observer)
+            }
+        }.also { field = it }
+
+    fun registerInternetAvailabilityCallback() {
+        internetAvailabilityObserver?.let { internetAvailabilityLiveData?.observe(this, it) }
+    }
+
+    fun unregisterInternetAvailabilityCallback() {
+        internetAvailabilityObserver?.let { internetAvailabilityLiveData?.removeObserver(it) }
+    }
+
+
     private var detectInternetAvailabilityJob: Job? = null
     private var repeatInternetAvailabilityTest = true
     private var testInternetAvailabilityDelay = 1000L
+    private var lastInternetAvailabilityTestTime = 0L
+        set(value) {
+            field = value
+            InternetAwareApp.lastInternetAvailabilityTestTime = value
+        }
 
-    private fun pollInternetAvailability() {
-        if (!isInternetAvailabilityCallbackActive) {
+    fun restartInternetAvailabilityCallback() {
+        if (detectInternetAvailabilityJob?.isActive != true) {
             detectInternetAvailabilityJob = lifecycleScope.launch(Dispatchers.IO) {
                 repeatInternetAvailabilityTest()
                 while (isActive) {
@@ -41,15 +69,9 @@ abstract class InternetAwareActivity : AppCompatActivity() {
             detectInternetAvailabilityChanged()
     }
 
-    private var lastInternetAvailabilityTestTime = 0L
-        set(value) {
-            field = value
-            InternetAwareActivity.lastInternetAvailabilityTestTime = value
-        }
-
     private fun detectInternetAvailabilityChanged() {
         if (isInternetAvailabilityTimeIntervalExceeded) {
-            InternetAvailability.postValue(trySafely {
+            internetAvailabilityLiveData?.postValue(trySafely {
                 isConnected && runInternetAvailabilityTest().let { response ->
                     response.isSuccessful.also {
                         if (it) {
@@ -61,12 +83,6 @@ abstract class InternetAwareActivity : AppCompatActivity() {
                 }
             })
         }
-    }
-
-    fun restartInternetAvailabilityCallback(interval: Long = testInternetAvailabilityDelay) {
-        setInternetAvailabilityCallbackDelay(interval)
-        resumeInternetAvailabilityCallback()
-        pollInternetAvailability()
     }
 
     fun resumeInternetAvailabilityCallback() {
@@ -84,17 +100,6 @@ abstract class InternetAwareActivity : AppCompatActivity() {
 
     fun setInternetAvailabilityCallbackDelay(interval: Long) {
         testInternetAvailabilityDelay = interval
-    }
-
-    val isInternetAvailabilityCallbackActive
-        get() = detectInternetAvailabilityJob?.isActive == true
-
-    fun registerInternetAvailabilityCallback() {
-        internetAvailabilityObserver?.let { InternetAvailability.observe(this, it) }
-    }
-
-    fun unregisterInternetAvailabilityCallback() {
-        internetAvailabilityObserver?.let { InternetAvailability.removeObserver(it) }
     }
 
     open fun runInternetAvailabilityTest() = app.runInternetAvailabilityTest()

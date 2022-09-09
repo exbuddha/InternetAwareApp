@@ -3,12 +3,11 @@ abstract class NetworkStateDao {
     suspend fun updateNetworkState() = updateNetworkState(
         isConnected,
         hasInternet,
-        hasRemote,
         hasWifi,
         hasMobile)
 
-    @Query("INSERT INTO network_states(is_connected, has_internet, is_externally_disconnected, has_wifi, has_mobile, sid) VALUES (:isConnected, :hasInternet, :isExternallyDisconnected, :hasWifi, :hasMobile, :sid)")
-    abstract suspend fun updateNetworkState(isConnected: Boolean, hasInternet: Boolean, isExternallyDisconnected: Boolean, hasWifi: Boolean, hasMobile: Boolean, sid: Long = app.sid)
+    @Query("INSERT INTO network_states(is_connected, has_internet, has_wifi, has_mobile, sid) VALUES (:isConnected, :hasInternet, :hasWifi, :hasMobile, :sid)")
+    abstract suspend fun updateNetworkState(isConnected: Boolean, hasInternet: Boolean, hasWifi: Boolean, hasMobile: Boolean, sid: Long = app.sid)
 
     @Update(onConflict = REPLACE)
     abstract suspend fun updateNetworkState(networkState: NetworkStateEntity)

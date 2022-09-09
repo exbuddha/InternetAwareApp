@@ -1,17 +1,14 @@
-object InternetAvailability : DifferenceLiveData<Boolean?>(isPermitted && isConnected) {
-    fun postExternallyDisconnected() = postValue(null)
-    fun postExternallyReconnected() = postValue(true)
-    fun postInternallyDisconnected() = postValue(false)
+val isInternetAccessPermitted by lazy {
+    permissions?.let {
+        it.contains(ACCESS_NETWORK_STATE) &&
+        it.contains(INTERNET)
+    } ?: false
 }
 
 val isConnected
     get() = networkCapabilities?.get()?.canSatisfy(connectivityRequest!!) ?: false
 
-val hasInternet
-    get() = InternetAvailability.value ?: false
-
-val hasRemote
-    get() = InternetAvailability.value == true
+var hasInternet: Boolean = false
 
 val hasMobile
     get() = networkCapabilities?.get()?.hasTransport(TRANSPORT_CELLULAR) ?: false

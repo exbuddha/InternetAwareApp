@@ -4,8 +4,6 @@ data class NetworkStateEntity(
     val isConnected: Boolean,
     @ColumnInfo(name = "has_internet")
     val hasInternet: Boolean,
-    @ColumnInfo(name = "is_externally_disconnected")
-    val isExternallyDisconnected: Boolean,
     @ColumnInfo(name = "has_wifi")
     val hasWifi: Boolean,
     @ColumnInfo(name = "has_mobile")
