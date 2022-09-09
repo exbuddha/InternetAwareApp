@@ -1,4 +1,10 @@
 open class ReferenceLiveData<T>(protected open var ref: T?) : LiveData<Unit>() {
+    open val isResolved
+        get() = ref !== null
+
+    open val isNotResolved
+        get() = ref === null
+
     open fun postChange(value: T?) {
         ref = value
         postChange()
@@ -15,12 +21,6 @@ open class ReferenceLiveData<T>(protected open var ref: T?) : LiveData<Unit>() {
 
 open class DifferenceLiveData<T>(ref: T?) : ReferenceLiveData<T>(ref) {
     constructor() : this(null)
-
-    open val isResolved
-        get() = ref !== null
-
-    open val isNotResolved
-        get() = ref === null
 
     override fun postChange(value: T?) {
         if (ref != value) super.postChange(value)
