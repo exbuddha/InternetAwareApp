@@ -15,12 +15,14 @@ class InternetAwareApp : Application() {
         internetAvailabilityTimeInterval = resources.getString(R.string.app_internet_detection_time_interval).toLong()
     }
 
-    fun runInternetAvailabilityTest(): Response {
+    fun runInternetAvailabilityTest(): Boolean {
+        Log.i(INET_TAG, "Trying to send out http request for internet availability...")
         return requireHttpClientForInternetAvailabilityTest()
             .newCall(requireHttpRequestForInternetAvailabilityTest())
-            .execute()
-            .also {
-                Log.i(INET_TAG, "Sending out http request for internet availability...")
+            .execute().let { response ->
+                response.isSuccessful.also {
+                    response.close()
+                }
             }
     }
 
@@ -40,7 +42,7 @@ class InternetAwareApp : Application() {
         oldNetwork: Network?, oldNetworkCapabilities: NetworkCapabilities?,
         newNetwork: Network?, newNetworkCapabilities: NetworkCapabilities?) {
         if (newNetworkCapabilities !== null) {
-            updateNetworkCapabilities(newNetworkCapabilities)
+            runBlocking { updateNetworkCapabilities(newNetworkCapabilities) }
         }
         if (oldNetworkCapabilities !== null) {
             Log.i(INET_TAG, "Network capabilities have changed.")
@@ -48,22 +50,18 @@ class InternetAwareApp : Application() {
     }
 
     fun reactToInternetAvailabilityChanged() {
-        updateNetworkState()
+        runBlocking { updateNetworkState() }
         Log.i(INET_TAG, "Internet availability has changed.")
     }
 
-    private fun updateNetworkState() {
-        runBlocking {
-            networkStateDao.updateNetworkState()
-            Log.i(DB_TAG, "Updated network state.")
-        }
+    private suspend fun updateNetworkState() {
+        networkStateDao.updateNetworkState()
+        Log.i(DB_TAG, "Updated network state.")
     }
 
-    private fun updateNetworkCapabilities(networkCapabilities: NetworkCapabilities) {
-        runBlocking {
-            networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities)
-            Log.i(DB_TAG, "Updated network capabilities.")
-        }
+    private suspend fun updateNetworkCapabilities(networkCapabilities: NetworkCapabilities) {
+        networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities)
+        Log.i(DB_TAG, "Updated network capabilities.")
     }
 
     companion object {

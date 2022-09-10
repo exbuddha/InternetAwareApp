@@ -1,8 +1,4 @@
-open class DifferenceLiveData<T>() : MutableLiveData<T>() {
-    constructor(value: T) : this() {
-        super.postValue(value)
-    }
-
+open class DifferenceLiveData<T> : MutableLiveData<T>() {
     override fun postValue(value: T) {
         if (value != this.value) super.postValue(value)
     }
@@ -10,12 +6,7 @@ open class DifferenceLiveData<T>() : MutableLiveData<T>() {
     fun postValue() = super.postValue(value)
 }
 
-/** WARNING: memory leak! */
-abstract class LifecycleOwnerObserver<out T : LifecycleOwner, R>(
-    private val receiver: T,
-    private val block: T.(R) -> Unit
-) : Observer<R> {
-    override fun onChanged(t: R) {
-        receiver.block(t)
-    }
+abstract class DifferenceListener<T> : DifferenceLiveData<T>(), Observer<T> {
+    open fun observe(owner: LifecycleOwner) = observe(owner, this)
+    open fun removeObserver() = removeObserver(this)
 }
