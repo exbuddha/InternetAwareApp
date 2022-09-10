@@ -32,7 +32,8 @@ fun clearNetworkCapabilitiesObjects() {
 }
 
 private var networkCapabilitiesListener: NetworkCallback? = null
-private fun requireNetworkCapabilitiesListener() = networkCapabilitiesListener ?: object : NetworkCallback() {
+private fun requireNetworkCapabilitiesListener() =
+    networkCapabilitiesListener ?: object : NetworkCallback() {
         override fun onCapabilitiesChanged(newNetwork: Network, newNetworkCapabilities: NetworkCapabilities) {
             super.onCapabilitiesChanged(newNetwork, newNetworkCapabilities)
             app.reactToNetworkCapabilitiesChanged(
