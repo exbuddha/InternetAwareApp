@@ -11,19 +11,19 @@ val isInternetAccessPermitted by lazy {
     } ?: false
 }
 val isConnected
-    get() = networkCapabilities?.get()?.canSatisfy(connectivityRequest!!) ?: false
+    get() = networkCapabilities?.canSatisfy(connectivityRequest!!) ?: false
 var hasInternet = false
     get() = isConnected && field
 val hasMobile
-    get() = networkCapabilities?.get()?.hasTransport(TRANSPORT_CELLULAR) ?: false
+    get() = networkCapabilities?.hasTransport(TRANSPORT_CELLULAR) ?: false
 val hasWifi
-    get() = networkCapabilities?.get()?.hasTransport(TRANSPORT_WIFI) ?: false
+    get() = networkCapabilities?.hasTransport(TRANSPORT_WIFI) ?: false
 
 fun registerNetworkCapabilitiesCallback() {
-    requireNetworkCapabilitiesListener().let { connectivityManager?.get()?.registerDefaultNetworkCallback(it) }
+    requireNetworkCapabilitiesListener().let { connectivityManager?.registerDefaultNetworkCallback(it) }
 }
 fun unregisterNetworkCapabilitiesCallback() {
-    networkCapabilitiesListener?.let { connectivityManager?.get()?.unregisterNetworkCallback(it) }
+    networkCapabilitiesListener?.let { connectivityManager?.unregisterNetworkCallback(it) }
 }
 fun clearNetworkCapabilitiesObjects() {
     networkCapabilitiesListener = null
@@ -36,19 +36,19 @@ private fun requireNetworkCapabilitiesListener() = networkCapabilitiesListener ?
         override fun onCapabilitiesChanged(newNetwork: Network, newNetworkCapabilities: NetworkCapabilities) {
             super.onCapabilitiesChanged(newNetwork, newNetworkCapabilities)
             app.reactToNetworkCapabilitiesChanged(
-                network?.get(), networkCapabilities?.get(),
+                network, networkCapabilities,
                 newNetwork, newNetworkCapabilities)
-            network = WeakReference(newNetwork)
-            networkCapabilities = WeakReference(newNetworkCapabilities)
+            network = newNetwork
+            networkCapabilities = newNetworkCapabilities
         }
     }.also { networkCapabilitiesListener = it }
 
-private var connectivityManager: WeakReference<ConnectivityManager?>? = null
-    get() = field ?: WeakReference(app.getSystemService(ConnectivityManager::class.java)).also { field = it }
-private var network: WeakReference<Network?>? = null
-    get() = field ?: connectivityManager?.get()?.let { WeakReference(it.activeNetwork).also { field = it } }
-private var networkCapabilities: WeakReference<NetworkCapabilities?>? = null
-    get() = field ?: connectivityManager?.get()?.let { WeakReference(it.getNetworkCapabilities(it.activeNetwork)).also { field = it } }
+private var connectivityManager: ConnectivityManager? = null
+    get() = field ?: app.getSystemService(ConnectivityManager::class.java).also { field = it }
+private var network: Network? = null
+    get() = field ?: connectivityManager?.let { (it.activeNetwork).also { field = it } }
+private var networkCapabilities: NetworkCapabilities? = null
+    get() = field ?: connectivityManager?.let { (it.getNetworkCapabilities(it.activeNetwork)).also { field = it } }
 private var connectivityRequest: NetworkRequest? = null
     get() = field ?: buildNetworkRequest {
         addCapability(NET_CAPABILITY_INTERNET)
