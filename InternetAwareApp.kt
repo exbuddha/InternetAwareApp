@@ -22,6 +22,7 @@ class InternetAwareApp : Application() {
             .execute().let { response ->
                 response.isSuccessful.also {
                     response.close()
+                    Log.i(INET_TAG, "Received response for internet availability.")
                 }
             }
     }

@@ -37,11 +37,9 @@ abstract class InternetAwareActivity : AppCompatActivity() {
                 while (isActive) {
                     if (repeatInternetAvailabilityTest && isInternetAvailabilityTimeIntervalExceeded) {
                         internetAvailabilityListener?.postValue(trySafely {
-                            isConnected && runInternetAvailabilityTest().also {
-                                if (it) {
+                            isConnected && runInternetAvailabilityTest().also { isSuccessful ->
+                                if (isSuccessful)
                                     lastInternetAvailabilityTestTime = now()
-                                    Log.i(INET_TAG, "Received response for internet availability.")
-                                }
                             }
                         })
                     }
