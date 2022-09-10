@@ -31,7 +31,7 @@ abstract class InternetAwareActivity : AppCompatActivity() {
         internetAvailabilityListener?.removeObserver()
     }
 
-    fun restartInternetAvailabilityCallback() {
+    fun restartInternetAvailabilityCallback(): Boolean {
         if (detectInternetAvailabilityJob?.isActive != true) {
             detectInternetAvailabilityJob = lifecycleScope.launch(Dispatchers.IO) {
                 while (isActive) {
@@ -47,6 +47,7 @@ abstract class InternetAwareActivity : AppCompatActivity() {
                 }
             }
         }
+        return detectInternetAvailabilityJob?.isActive == true
     }
 
     fun resumeInternetAvailabilityCallback() {
