@@ -10,7 +10,7 @@ abstract class NetworkStateDao {
     abstract suspend fun updateNetworkState(isConnected: Boolean, hasInternet: Boolean, hasWifi: Boolean, hasMobile: Boolean, sid: Long = app.sid)
 
     @Update(onConflict = REPLACE)
-    abstract suspend fun updateNetworkState(networkState: NetworkStateEntity)
+    abstract suspend fun updateNetworkState(networkStateEntity: NetworkStateEntity)
 
     @Query("SELECT * FROM network_states ORDER BY id DESC LIMIT 1")
     abstract suspend fun getNetworkState(): NetworkStateEntity?
