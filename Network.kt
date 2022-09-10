@@ -20,7 +20,7 @@ val hasWifi
     get() = networkCapabilities?.get()?.hasTransport(TRANSPORT_WIFI) ?: false
 
 fun registerNetworkCapabilitiesCallback() {
-    requireNetworkCapabilitiesListener().let { requireConnectivityManager()?.registerDefaultNetworkCallback(it) }
+    requireNetworkCapabilitiesListener().let { connectivityManager?.get()?.registerDefaultNetworkCallback(it) }
 }
 fun unregisterNetworkCapabilitiesCallback() {
     networkCapabilitiesListener?.let { connectivityManager?.get()?.unregisterNetworkCallback(it) }
@@ -44,8 +44,7 @@ private fun requireNetworkCapabilitiesListener() = networkCapabilitiesListener ?
     }.also { networkCapabilitiesListener = it }
 
 private var connectivityManager: WeakReference<ConnectivityManager?>? = null
-private fun requireConnectivityManager() =
-    connectivityManager?.get() ?: app.getSystemService(ConnectivityManager::class.java)?.also { connectivityManager = WeakReference(it) }
+    get() = field ?: WeakReference(app.getSystemService(ConnectivityManager::class.java)).also { field = it }
 private var network: WeakReference<Network?>? = null
     get() = field ?: connectivityManager?.get()?.let { WeakReference(it.activeNetwork).also { field = it } }
 private var networkCapabilities: WeakReference<NetworkCapabilities?>? = null
