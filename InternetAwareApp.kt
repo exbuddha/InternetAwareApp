@@ -114,12 +114,12 @@ class InternetAwareApp : Application(), LiveDataRunner {
         isObserving = false
     }
 
-    private fun attachOnNullSession(block: suspend (Boolean) -> Unit) {
+    private fun attachOnNullSession(block: suspend () -> Unit) {
         if (session === null) {
-            fun async() = liveData { emit(block(true)) }
+            fun async() = liveData { emit(block()) }
             attach(::async)
         }
-        else runBlocking { block(false) }
+        else runBlocking { block() }
     }
 
     companion object {
