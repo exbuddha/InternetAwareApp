@@ -1,6 +1,5 @@
 @Dao
 abstract class NetworkStateDao {
-    @Update(onConflict = REPLACE)
     suspend fun updateNetworkState() = updateNetworkState(
         isConnected,
         hasInternet,
