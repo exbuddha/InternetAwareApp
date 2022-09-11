@@ -86,7 +86,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
 
     fun reactToNetworkCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
         attachOnNullSession {
-            runBlockingUnlessAttached(it) { updateNetworkCapabilities(newNetworkCapabilities) }
+            updateNetworkCapabilities(newNetworkCapabilities)
             Log.i(INET_TAG, "Network capabilities have changed.")
         }
     }
@@ -98,7 +98,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
 
     fun reactToInternetAvailabilityChanged() {
         attachOnNullSession {
-            runBlockingUnlessAttached(it) { updateNetworkState() }
+            updateNetworkState()
             Log.i(INET_TAG, "Internet availability has changed.")
         }
     }
@@ -122,9 +122,6 @@ class InternetAwareApp : Application(), LiveDataRunner {
             attach(::async)
         }
         else runBlocking { block(false) }
-    }
-    private suspend fun runBlockingUnlessAttached(isAttached: Boolean, block: suspend () -> Unit) {
-        if (isAttached) block() else runBlocking { block() }
     }
 
     companion object {
