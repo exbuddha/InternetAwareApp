@@ -4,7 +4,7 @@ abstract class InternetAwareActivity : AppCompatActivity() {
     var enableInternetAvailabilityCallback = true
         get() = field && isInternetAccessPermitted
 
-    val internetAvailabilityLiveData: MutableLiveData<Boolean?>?
+    val internetAvailabilityLiveData: DifferenceLiveData<Boolean?>?
         get() = internetAvailabilityListener
 
     override fun onCreate(savedInstanceState: Bundle?) {

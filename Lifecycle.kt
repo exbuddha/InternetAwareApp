@@ -1,9 +1,8 @@
 open class DifferenceLiveData<T> : MutableLiveData<T>() {
+    fun postValue() = super.postValue(value)
     override fun postValue(value: T) {
         if (value != this.value) super.postValue(value)
     }
-
-    fun postValue() = super.postValue(value)
 }
 
 abstract class DifferenceListener<T> : DifferenceLiveData<T>(), Observer<T> {
@@ -25,6 +24,11 @@ interface LiveDataRunner : Observer<Any?> {
         return advance()
     }
 
+    fun resume(): Boolean {
+        ln -= 1
+        return advance()
+    }
+
     fun advance(): Boolean {
         while (++ln < seq.size) {
             step = seq[ln].first.invoke()
@@ -37,11 +41,6 @@ interface LiveDataRunner : Observer<Any?> {
     fun capture(t: Any?) {
         seq[ln].second?.invoke(t)
         reset()
-    }
-
-    fun resume(): Boolean {
-        ln -= 1
-        return advance()
     }
 
     fun reset() {

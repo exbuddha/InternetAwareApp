@@ -114,7 +114,10 @@ class InternetAwareApp : Application(), LiveDataRunner {
     var isObserving = false
     var ex: Throwable? = null
     override fun advance() = super.advance().also { isObserving = it }
-    override fun reset() = super.reset().also { isObserving = false }
+    override fun reset() {
+        super.reset()
+        isObserving = false
+    }
 
     private fun attachOnNullSession(block: suspend (Boolean) -> Unit) {
         if (session === null) {
