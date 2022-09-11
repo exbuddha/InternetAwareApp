@@ -1,6 +1,5 @@
 @Dao
 abstract class NetworkCapabilitiesDao {
-    @Update(onConflict = REPLACE)
     suspend fun updateNetworkCapabilities(networkCapabilities: NetworkCapabilities) = updateNetworkCapabilities(
         networkCapabilities.capabilities.toJson(),
         networkCapabilities.linkDownstreamBandwidthKbps,
