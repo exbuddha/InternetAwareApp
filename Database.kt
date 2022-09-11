@@ -1,3 +1,5 @@
+const val DbVersion = 1
+
 val db by lazy {
     Room.databaseBuilder(app.applicationContext,
         AppDatabase::class.java, "app.db"

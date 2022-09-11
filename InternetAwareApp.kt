@@ -1,18 +1,55 @@
-class InternetAwareApp : Application() {
+class InternetAwareApp : Application(), LiveDataRunner {
     val startTime = now()
     var sid = 0L
 
     override fun onCreate() {
         super.onCreate()
         app = this
-        runBlocking {
-            sid = runtimeDao.newSession()
-            updateNetworkState()
-            runtimeDao.truncateSessions()
-            networkStateDao.truncateNetworkStates()
-            networkCapabilitiesDao.truncateNetworkCapabilities()
+        attach(::startSession) {
+            session = it as AppRuntimeSessionEntity
+            Log.i(SESSION_TAG, "New session created.")
         }
-        internetAvailabilityTimeInterval = resources.getString(R.string.app_internet_detection_time_interval).toLong()
+        attach(::initNetworkState) {
+            Log.i(SESSION_TAG, "Network state initialized.")
+        }
+        attach(::initNetworkCapabilities) {
+            Log.i(SESSION_TAG, "Network capabilities initialized.")
+        }
+        isObserving = start()
+    }
+
+    private fun startSession() = liveData(Dispatchers.IO) {
+        if (latestValue === null) {
+            resetOnErrorSuspended {
+                runtimeDao.newSession()
+                emit(runtimeDao.getSession())
+            }
+        }
+        resetSuspended {
+            truncateSession()
+        }
+    }
+
+    private suspend fun truncateSession() {
+        runtimeDao.truncateSessions()
+        networkStateDao.truncateNetworkStates()
+        networkCapabilitiesDao.truncateNetworkCapabilities()
+    }
+
+    private fun initNetworkState() = liveData(Dispatchers.IO) {
+        resetSuspended {
+            if (networkStateDao.getNetworkState()?.sid?.equals(session?.id) == false)
+                networkStateDao.updateNetworkState()
+            emit(Unit)
+        }
+    }
+
+    private fun initNetworkCapabilities() = liveData(Dispatchers.IO) {
+        resetSuspended {
+            if (networkCapabilitiesDao.getNetworkCapabilities()?.sid?.equals(session?.id) == false)
+                networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities!!)
+            emit(Unit)
+        }
     }
 
     fun runInternetAvailabilityTest(): Boolean {
@@ -42,22 +79,14 @@ class InternetAwareApp : Application() {
     fun reactToNetworkCapabilitiesChanged(
         oldNetwork: Network?, oldNetworkCapabilities: NetworkCapabilities?,
         newNetwork: Network?, newNetworkCapabilities: NetworkCapabilities?) {
-        if (newNetworkCapabilities !== null) {
-            runBlocking { updateNetworkCapabilities(newNetworkCapabilities) }
+        attachResettingOnNullSession {
+            if (newNetworkCapabilities !== null) {
+                runBlockingUnlessAttached(it) { updateNetworkCapabilities(newNetworkCapabilities) }
+            }
+            if (oldNetworkCapabilities !== null) {
+                Log.i(INET_TAG, "Network capabilities have changed.")
+            }
         }
-        if (oldNetworkCapabilities !== null) {
-            Log.i(INET_TAG, "Network capabilities have changed.")
-        }
-    }
-
-    fun reactToInternetAvailabilityChanged() {
-        runBlocking { updateNetworkState() }
-        Log.i(INET_TAG, "Internet availability has changed.")
-    }
-
-    private suspend fun updateNetworkState() {
-        networkStateDao.updateNetworkState()
-        Log.i(DB_TAG, "Updated network state.")
     }
 
     private suspend fun updateNetworkCapabilities(networkCapabilities: NetworkCapabilities) {
@@ -65,26 +94,58 @@ class InternetAwareApp : Application() {
         Log.i(DB_TAG, "Updated network capabilities.")
     }
 
+    fun reactToInternetAvailabilityChanged() {
+        attachResettingOnNullSession {
+            runBlockingUnlessAttached(it) { updateNetworkState() }
+            Log.i(INET_TAG, "Internet availability has changed.")
+        }
+    }
+
+    private suspend fun updateNetworkState() {
+        networkStateDao.updateNetworkState()
+        Log.i(DB_TAG, "Updated network state.")
+    }
+
+    override val seq: MutableList<Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>> = mutableListOf()
+    override var ln = -1
+    override var step: LiveData<*>? = null
+    var isObserving = false
+    var ex: Throwable? = null
+    override fun advance() = super.advance().also { isObserving = it }
+    override fun reset() = super.reset().also { isObserving = false }
+
+    private suspend fun resetSuspended(block: suspend () -> Unit) {
+        try {
+            block()
+        } catch (ex: Throwable) {
+            reset()
+            this.ex = ex
+            throw ex
+        }
+    }
+    private suspend fun resetOnErrorSuspended(block: suspend () -> Unit) {
+        try {
+            block()
+        } catch (ex: Throwable) {
+            if (ex !is CancellationException) reset()
+            this.ex = ex
+            throw ex
+        }
+    }
+    private fun attachResettingOnNullSession(block: suspend (Boolean) -> Unit) {
+        if (session === null) {
+            fun async() = liveData { resetSuspended { emit(block(true)) } }
+            attach(::async)
+        }
+        else runBlocking { block(false) }
+    }
+    private suspend fun runBlockingUnlessAttached(isAttached: Boolean, block: suspend () -> Unit) {
+        if (isAttached) block() else runBlocking { block() }
+    }
+
     companion object {
-        const val DbVersion = 1
-
-        const val internetAvailabilityTimeIntervalMin = 3000L
-        var internetAvailabilityTimeInterval = internetAvailabilityTimeIntervalMin
-            set(value) {
-                field = if (value < internetAvailabilityTimeIntervalMin)
-                    internetAvailabilityTimeIntervalMin
-                else value
-            }
-        var lastInternetAvailabilityTestTime = 0L
-            set(value) {
-                if (value == 0L || value > field) field = value
-            }
-        val isInternetAvailabilityTimeIntervalExceeded
-            get() = isTimeIntervalExceeded(internetAvailabilityTimeInterval, lastInternetAvailabilityTestTime)
-        fun isTimeIntervalExceeded(interval: Long, last: Long) =
-            (now() - last).let { it >= interval || it < 0 } || last == 0L
-
         const val INET_TAG = "INTERNET"
         const val DB_TAG = "DATABASE"
+        const val SESSION_TAG = "SESSION"
     }
 }

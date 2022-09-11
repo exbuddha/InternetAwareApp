@@ -7,6 +7,11 @@ abstract class InternetAwareActivity : AppCompatActivity() {
     val internetAvailabilityLiveData: MutableLiveData<Boolean?>?
         get() = internetAvailabilityListener
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        if (!app.isObserving) app.resume()
+        super.onCreate(savedInstanceState)
+    }
+
     override fun onResume() {
         super.onResume()
         if (enableNetworkCapabilitiesCallback)

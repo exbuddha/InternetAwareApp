@@ -1,5 +1,5 @@
 lateinit var app: InternetAwareApp
-
+var session: AppRuntimeSessionEntity? = null
 val permissions
     get() = app.packageManager.getPackageInfo(app.packageName, GET_PERMISSIONS).requestedPermissions
 

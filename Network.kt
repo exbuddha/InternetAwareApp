@@ -1,9 +1,3 @@
-abstract class InternetAvailabilityListener : DifferenceListener<Boolean?>() {
-    override fun onChanged(value: Boolean?) {
-        hasInternet = value == true
-    }
-}
-
 val isInternetAccessPermitted by lazy {
     permissions?.let {
         it.contains(ACCESS_NETWORK_STATE) &&
@@ -18,6 +12,28 @@ val hasMobile
     get() = networkCapabilities?.hasTransport(TRANSPORT_CELLULAR) ?: false
 val hasWifi
     get() = networkCapabilities?.hasTransport(TRANSPORT_WIFI) ?: false
+
+const val internetAvailabilityTimeIntervalMin = 3000L
+var internetAvailabilityTimeInterval = internetAvailabilityTimeIntervalMin
+    set(value) {
+        field = if (value < internetAvailabilityTimeIntervalMin)
+            internetAvailabilityTimeIntervalMin
+        else value
+    }
+var lastInternetAvailabilityTestTime = 0L
+    set(value) {
+        if (value == 0L || value > field) field = value
+    }
+val isInternetAvailabilityTimeIntervalExceeded
+    get() = isTimeIntervalExceeded(internetAvailabilityTimeInterval, lastInternetAvailabilityTestTime)
+fun isTimeIntervalExceeded(interval: Long, last: Long) =
+    (now() - last).let { it >= interval || it < 0 } || last == 0L
+
+abstract class InternetAvailabilityListener : DifferenceListener<Boolean?>() {
+    override fun onChanged(value: Boolean?) {
+        hasInternet = value == true
+    }
+}
 
 fun registerNetworkCapabilitiesCallback() {
     requireNetworkCapabilitiesListener().let { connectivityManager?.registerDefaultNetworkCallback(it) }
@@ -48,7 +64,7 @@ private var connectivityManager: ConnectivityManager? = null
     get() = field ?: app.getSystemService(ConnectivityManager::class.java).also { field = it }
 private var network: Network? = null
     get() = field ?: connectivityManager?.let { (it.activeNetwork).also { field = it } }
-private var networkCapabilities: NetworkCapabilities? = null
+var networkCapabilities: NetworkCapabilities? = null
     get() = field ?: connectivityManager?.let { (it.getNetworkCapabilities(it.activeNetwork)).also { field = it } }
 private var connectivityRequest: NetworkRequest? = null
     get() = field ?: buildNetworkRequest {

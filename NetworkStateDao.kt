@@ -1,5 +1,6 @@
 @Dao
 abstract class NetworkStateDao {
+    @Update(onConflict = REPLACE)
     suspend fun updateNetworkState() = updateNetworkState(
         isConnected,
         hasInternet,
@@ -7,7 +8,7 @@ abstract class NetworkStateDao {
         hasMobile)
 
     @Query("INSERT INTO network_states(is_connected, has_internet, has_wifi, has_mobile, sid) VALUES (:isConnected, :hasInternet, :hasWifi, :hasMobile, :sid)")
-    abstract suspend fun updateNetworkState(isConnected: Boolean, hasInternet: Boolean, hasWifi: Boolean, hasMobile: Boolean, sid: Long = app.sid)
+    abstract suspend fun updateNetworkState(isConnected: Boolean, hasInternet: Boolean, hasWifi: Boolean, hasMobile: Boolean, sid: Long = session!!.id)
 
     @Update(onConflict = REPLACE)
     abstract suspend fun updateNetworkState(networkStateEntity: NetworkStateEntity)
@@ -28,7 +29,7 @@ abstract class NetworkStateDao {
     abstract suspend fun truncateNetworkStates(n: Int = 30)
 
     @Query("DELETE FROM network_states WHERE sid <> :sid")
-    abstract suspend fun cleanNetworkStates(sid: Long = app.sid)
+    abstract suspend fun cleanNetworkStates(sid: Long = session!!.id)
 
     @Query("DELETE FROM network_states")
     abstract suspend fun dropNetworkStates()

@@ -1,5 +1,6 @@
 @Dao
 abstract class NetworkCapabilitiesDao {
+    @Update(onConflict = REPLACE)
     suspend fun updateNetworkCapabilities(networkCapabilities: NetworkCapabilities) = updateNetworkCapabilities(
         networkCapabilities.capabilities.toJson(),
         networkCapabilities.linkDownstreamBandwidthKbps,
@@ -7,7 +8,7 @@ abstract class NetworkCapabilitiesDao {
         networkCapabilities.signalStrength)
 
     @Query("INSERT INTO network_capabilities(capabilities, downstream, upstream, strength, sid) VALUES (:capabilities, :downstream, :upstream, :strength, :sid)")
-    abstract suspend fun updateNetworkCapabilities(capabilities: String, downstream: Int, upstream: Int, strength: Int, sid: Long = app.sid)
+    abstract suspend fun updateNetworkCapabilities(capabilities: String, downstream: Int, upstream: Int, strength: Int, sid: Long = session!!.id)
 
     @Update(onConflict = REPLACE)
     abstract suspend fun updateNetworkCapabilities(networkCapabilitiesEntity: NetworkCapabilitiesEntity)
@@ -28,7 +29,7 @@ abstract class NetworkCapabilitiesDao {
     abstract suspend fun truncateNetworkCapabilities(n: Int = 30)
 
     @Query("DELETE FROM network_capabilities WHERE sid <> :sid")
-    abstract suspend fun cleanNetworkCapabilities(sid: Long = app.sid)
+    abstract suspend fun cleanNetworkCapabilities(sid: Long = session!!.id)
 
     @Query("DELETE FROM network_capabilities")
     abstract suspend fun dropNetworkCapabilities()
