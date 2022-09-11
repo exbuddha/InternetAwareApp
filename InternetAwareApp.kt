@@ -1,11 +1,10 @@
 class InternetAwareApp : Application(), LiveDataRunner {
     val startTime = now()
-    var sid = 0L
 
     override fun onCreate() {
         super.onCreate()
         app = this
-        attach(::startSession) {
+        attach(::newSession) {
             session = it as AppRuntimeSessionEntity
             Log.i(SESSION_TAG, "New session created.")
         }
@@ -18,15 +17,16 @@ class InternetAwareApp : Application(), LiveDataRunner {
         isObserving = start()
     }
 
-    private fun startSession() = liveData(Dispatchers.IO) {
-        if (latestValue === null) {
-            resetOnErrorSuspended {
+    private fun newSession() = liveData(Dispatchers.IO) {
+        try {
+            if (latestValue === null) {
                 runtimeDao.newSession()
                 emit(runtimeDao.getSession())
             }
-        }
-        resetSuspended {
             truncateSession()
+        } catch (ex: Throwable) {
+            this@InternetAwareApp.ex = ex
+            throw ex
         }
     }
 
@@ -37,18 +37,26 @@ class InternetAwareApp : Application(), LiveDataRunner {
     }
 
     private fun initNetworkState() = liveData(Dispatchers.IO) {
-        resetSuspended {
+        try {
             if (networkStateDao.getNetworkState()?.sid?.equals(session?.id) == false)
                 networkStateDao.updateNetworkState()
             emit(Unit)
+        } catch (ex: Throwable) {
+            this@InternetAwareApp.ex = ex
+            throw ex
         }
     }
 
     private fun initNetworkCapabilities() = liveData(Dispatchers.IO) {
-        resetSuspended {
-            if (networkCapabilitiesDao.getNetworkCapabilities()?.sid?.equals(session?.id) == false)
-                networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities!!)
+        try {
+            networkCapabilitiesDao.getNetworkCapabilities()?.let {
+                if (it.sid != session?.id)
+                    networkCapabilitiesDao.updateNetworkCapabilities(it)
+            }
             emit(Unit)
+        } catch (ex: Throwable) {
+            this@InternetAwareApp.ex = ex
+            throw ex
         }
     }
 
@@ -76,16 +84,10 @@ class InternetAwareApp : Application(), LiveDataRunner {
             .build()
     }
 
-    fun reactToNetworkCapabilitiesChanged(
-        oldNetwork: Network?, oldNetworkCapabilities: NetworkCapabilities?,
-        newNetwork: Network?, newNetworkCapabilities: NetworkCapabilities?) {
-        attachResettingOnNullSession {
-            if (newNetworkCapabilities !== null) {
-                runBlockingUnlessAttached(it) { updateNetworkCapabilities(newNetworkCapabilities) }
-            }
-            if (oldNetworkCapabilities !== null) {
-                Log.i(INET_TAG, "Network capabilities have changed.")
-            }
+    fun reactToNetworkCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+        attachOnNullSession {
+            runBlockingUnlessAttached(it) { updateNetworkCapabilities(newNetworkCapabilities) }
+            Log.i(INET_TAG, "Network capabilities have changed.")
         }
     }
 
@@ -95,7 +97,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
     }
 
     fun reactToInternetAvailabilityChanged() {
-        attachResettingOnNullSession {
+        attachOnNullSession {
             runBlockingUnlessAttached(it) { updateNetworkState() }
             Log.i(INET_TAG, "Internet availability has changed.")
         }
@@ -114,27 +116,9 @@ class InternetAwareApp : Application(), LiveDataRunner {
     override fun advance() = super.advance().also { isObserving = it }
     override fun reset() = super.reset().also { isObserving = false }
 
-    private suspend fun resetSuspended(block: suspend () -> Unit) {
-        try {
-            block()
-        } catch (ex: Throwable) {
-            reset()
-            this.ex = ex
-            throw ex
-        }
-    }
-    private suspend fun resetOnErrorSuspended(block: suspend () -> Unit) {
-        try {
-            block()
-        } catch (ex: Throwable) {
-            if (ex !is CancellationException) reset()
-            this.ex = ex
-            throw ex
-        }
-    }
-    private fun attachResettingOnNullSession(block: suspend (Boolean) -> Unit) {
+    private fun attachOnNullSession(block: suspend (Boolean) -> Unit) {
         if (session === null) {
-            fun async() = liveData { resetSuspended { emit(block(true)) } }
+            fun async() = liveData { emit(block(true)) }
             attach(::async)
         }
         else runBlocking { block(false) }

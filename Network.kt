@@ -36,36 +36,30 @@ abstract class InternetAvailabilityListener : DifferenceListener<Boolean?>() {
 }
 
 fun registerNetworkCapabilitiesCallback() {
-    requireNetworkCapabilitiesListener().let { connectivityManager?.registerDefaultNetworkCallback(it) }
+    networkCapabilitiesListener?.let { connectivityManager?.registerDefaultNetworkCallback(it) }
 }
 fun unregisterNetworkCapabilitiesCallback() {
     networkCapabilitiesListener?.let { connectivityManager?.unregisterNetworkCallback(it) }
 }
 fun clearNetworkCapabilitiesObjects() {
     networkCapabilitiesListener = null
-    connectivityManager = null
     connectivityRequest = null
 }
 
 private var networkCapabilitiesListener: NetworkCallback? = null
-private fun requireNetworkCapabilitiesListener() =
-    networkCapabilitiesListener ?: object : NetworkCallback() {
-        override fun onCapabilitiesChanged(newNetwork: Network, newNetworkCapabilities: NetworkCapabilities) {
-            super.onCapabilitiesChanged(newNetwork, newNetworkCapabilities)
-            app.reactToNetworkCapabilitiesChanged(
-                network, networkCapabilities,
-                newNetwork, newNetworkCapabilities)
-            network = newNetwork
-            networkCapabilities = newNetworkCapabilities
+    get() = field ?: object : NetworkCallback() {
+        override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+            super.onCapabilitiesChanged(network, networkCapabilities)
+            app.reactToNetworkCapabilitiesChanged(network, networkCapabilities)
         }
-    }.also { networkCapabilitiesListener = it }
+    }.also { field = it }
 
-private var connectivityManager: ConnectivityManager? = null
-    get() = field ?: app.getSystemService(ConnectivityManager::class.java).also { field = it }
-private var network: Network? = null
-    get() = field ?: connectivityManager?.let { (it.activeNetwork).also { field = it } }
-var networkCapabilities: NetworkCapabilities? = null
-    get() = field ?: connectivityManager?.let { (it.getNetworkCapabilities(it.activeNetwork)).also { field = it } }
+private val connectivityManager
+    get() = app.getSystemService(ConnectivityManager::class.java)
+private val network
+    get() = connectivityManager?.let { (it.activeNetwork) }
+val networkCapabilities
+    get() = connectivityManager?.let { (it.getNetworkCapabilities(it.activeNetwork)) }
 private var connectivityRequest: NetworkRequest? = null
     get() = field ?: buildNetworkRequest {
         addCapability(NET_CAPABILITY_INTERNET)
