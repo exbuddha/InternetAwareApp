@@ -26,7 +26,6 @@ class InternetAwareApp : Application(), LiveDataRunner {
             truncateSession()
         } catch (ex: Throwable) {
             this@InternetAwareApp.ex = ex
-            throw ex
         }
     }
 
@@ -43,20 +42,16 @@ class InternetAwareApp : Application(), LiveDataRunner {
             emit(Unit)
         } catch (ex: Throwable) {
             this@InternetAwareApp.ex = ex
-            throw ex
         }
     }
 
     private fun initNetworkCapabilities() = liveData(Dispatchers.IO) {
         try {
-            networkCapabilitiesDao.getNetworkCapabilities()?.let {
-                if (it.sid != session?.id)
-                    networkCapabilitiesDao.updateNetworkCapabilities(it)
-            }
+            if (networkCapabilitiesDao.getNetworkCapabilities()?.sid?.equals(session?.id) == false)
+                networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities!!)
             emit(Unit)
         } catch (ex: Throwable) {
             this@InternetAwareApp.ex = ex
-            throw ex
         }
     }
 
