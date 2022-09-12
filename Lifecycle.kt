@@ -46,7 +46,7 @@ interface LiveDataRunner : Observer<Any?> {
     }
 
     fun attachImmediately(step: Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>) {
-        seq.add(ln + 1, step)
+        attach(ln + 1, step)
     }
     fun attachImmediately(step: () -> LiveData<*>?, capture: ((Any?) -> Any?)? = null) {
         attachImmediately(Pair(step, capture))
