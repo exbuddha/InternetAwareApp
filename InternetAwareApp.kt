@@ -20,10 +20,16 @@ class InternetAwareApp : Application(), LiveDataRunner {
             else reset()
         }
         attach(::initNetworkState) {
-            Log.i(SESSION_TAG, "Network state initialized.")
+            if (it === Unit)
+                Log.i(SESSION_TAG, "Network state initialized.")
+            else
+                 reset()
         }
         attach(::initNetworkCapabilities) {
-            Log.i(SESSION_TAG, "Network capabilities initialized.")
+            if (it === Unit)
+                Log.i(SESSION_TAG, "Network capabilities initialized.")
+            else
+                 reset()
         }
         isObserving = start()
     }
@@ -55,6 +61,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
             emit(Unit)
         } catch (ex: Throwable) {
             this@InternetAwareApp.ex = ex
+            emit(null)
         }
     }
 
@@ -65,6 +72,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
             emit(Unit)
         } catch (ex: Throwable) {
             this@InternetAwareApp.ex = ex
+            emit(null)
         }
     }
 
