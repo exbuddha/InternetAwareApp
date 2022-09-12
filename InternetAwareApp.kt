@@ -35,9 +35,9 @@ class InternetAwareApp : Application(), LiveDataRunner {
                 emit(runtimeDao.getSession())
             }
         } catch (ex: Throwable) {
-            emit(null)
             this@MediaPlayerApp.ex = ex
             ln -= 1
+            emit(null)
         }
         trySafely { truncateSession() }
     }
