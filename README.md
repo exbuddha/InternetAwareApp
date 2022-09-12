@@ -46,7 +46,7 @@ is introduced that can schedule code to run in a context concurrent to the appli
        })
 
        capture {
-           // ... async work that runs along the main thread (null result)
+           // ... sync work that runs along the main thread (null result)
        }
 
    The runner may need to be resumed if it has completed by this time. Use `isObserving` to determine if the runner
