@@ -101,7 +101,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
     }
 
     private fun reactToNetworkCapabilitiesChangedAsync(network: Network, networkCapabilities: NetworkCapabilities) =
-        attach { reactToNetworkCapabilitiesChanged(network, networkCapabilities) }
+        attach<Unit>({ reactToNetworkCapabilitiesChanged(network, networkCapabilities) })
     private fun reactToNetworkCapabilitiesChangedSync(network: Network, networkCapabilities: NetworkCapabilities) =
         runBlocking { reactToNetworkCapabilitiesChanged(network, networkCapabilities) }
     private suspend fun reactToNetworkCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
@@ -115,7 +115,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
     }
 
     private fun reactToInternetAvailabilityChangedAsync(state: Boolean?) =
-        attach { reactToInternetAvailabilityChanged() }
+        attach<Unit>({ reactToInternetAvailabilityChanged() })
     private fun reactToInternetAvailabilityChangedSync(state: Boolean?) =
         runBlocking { reactToInternetAvailabilityChanged() }
     private suspend fun reactToInternetAvailabilityChanged() {
