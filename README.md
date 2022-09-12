@@ -50,4 +50,5 @@ is introduced that can schedule code to run in a context concurrent to the appli
            // ... sync work that runs along main thread (null result)
        }
 
-   The runner may need to be resumed again if it has completed by this time.
+   The runner may need to be resumed again if it has completed by this time. This must only be done inside a capture
+   block or from the main thread.
