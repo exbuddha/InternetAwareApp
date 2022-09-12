@@ -27,7 +27,7 @@ is introduced that can schedule code to run in a context concurrent to the appli
 2. Attach the task to the application runner:
 
        attach(::runAsync) { result ->
-           // ... capture the result on a main thread
+           // ... capture result on a main thread
        }
 
 3. Start or resume the runner:
@@ -39,7 +39,13 @@ is introduced that can schedule code to run in a context concurrent to the appli
    callback on the connectivity thread, then that work must also be scheduled to run after the session is created:
 
        attach {
-           // ... work that needs to run only after new session is acquired
+           // ... async work that runs along main thread
+       } to {
+           // ... capture result on main thread
+       }
+
+       capture {
+           // ... work that runs on main thread (null result)
        }
 
    The runner may need to be resumed if it has completed by this time. Use `isObserving` to determine if the runner

@@ -11,9 +11,13 @@ abstract class DifferenceListener<T> : DifferenceLiveData<T>(), Observer<T> {
 }
 
 interface LiveDataRunner : Observer<Any?> {
-    val seq: MutableList<Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>>
+    var seq: MutableList<Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>>
     var ln: Int
     var step: LiveData<*>?
+
+    fun attach(step: Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>) {
+        seq.add(step)
+    }
 
     fun attach(step: () -> LiveData<*>?, capture: ((Any?) -> Any?)? = null) {
         seq.add(Pair(step, capture))
