@@ -36,16 +36,17 @@ is introduced that can schedule code to run in a context concurrent to the appli
        resume()   // continues from last executed step (useful in case of errors)
 
 4. If there is work that may be started from a background thread while the runner is active simultaneously, such as a
-   callback on the connectivity thread, then that work must also be scheduled to run after the session is created:
+   callback on the connectivity thread, then that work must also be scheduled to run along main thread:
 
-       attach {
-           // ... async work that runs along main thread
+       attach(Dispatchers.Unconfined, {
+           // ... async work that runs along a main thread
+           result
        } to {
-           // ... capture result on main thread
-       }
+           // ... capture result on a main thread
+       })
 
        capture {
-           // ... work that runs on main thread (null result)
+           // ... async work that runs along the main thread (null result)
        }
 
    The runner may need to be resumed if it has completed by this time. Use `isObserving` to determine if the runner

@@ -15,20 +15,20 @@ interface LiveDataRunner : Observer<Any?> {
     var ln: Int
     var step: LiveData<*>?
 
-    fun attach(step: Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>) {
-        seq.add(step)
-    }
-
     fun attach(step: () -> LiveData<*>?, capture: ((Any?) -> Any?)? = null) {
         seq.add(Pair(step, capture))
     }
-
     fun attach(step: suspend () -> Unit) {
         fun async() = liveData { emit(step()) }
         attach(::async)
     }
+    fun attach(context: CoroutineContext, step: Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>) {
+        fun async() = liveData(context) { emit(step.first.invoke()) }
+        attach(::async, step.second)
+    }
 
     fun capture(block: (Any?) -> Any?) = attach({ null }, block)
+    fun capture(context: CoroutineContext, block: (Any?) -> Any?) = attach(context, { null } to block)
 
     fun start(): Boolean {
         ln = -1
