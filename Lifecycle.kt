@@ -27,8 +27,38 @@ interface LiveDataRunner : Observer<Any?> {
         attach(::async, step.second)
     }
 
+    fun attach(index: Int, step: () -> LiveData<*>?, capture: ((Any?) -> Any?)? = null) {
+        seq.add(index, Pair(step, capture))
+    }
+    fun attach(index: Int, step: suspend () -> Unit) {
+        fun async() = liveData { emit(step()) }
+        attach(index, ::async)
+    }
+    fun attach(index: Int, context: CoroutineContext, step: Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>) {
+        fun async() = liveData(context) { emit(step.first.invoke()) }
+        attach(index, ::async, step.second)
+    }
+
+    fun attachImmediately(step: () -> LiveData<*>?, capture: ((Any?) -> Any?)? = null) {
+        seq.add(ln + 1, Pair(step, capture))
+    }
+    fun attachImmediately(step: suspend () -> Unit) {
+        fun async() = liveData { emit(step()) }
+        attachImmediately(::async)
+    }
+    fun attachImmediately(context: CoroutineContext, step: Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>) {
+        fun async() = liveData(context) { emit(step.first.invoke()) }
+        attachImmediately(::async, step.second)
+    }
+
     fun capture(block: (Any?) -> Any?) = attach({ null }, block)
     fun capture(context: CoroutineContext, block: (Any?) -> Any?) = attach(context, { null } to block)
+
+    fun capture(index: Int, block: (Any?) -> Any?) = attach(index, { null }, block)
+    fun capture(index: Int, context: CoroutineContext, block: (Any?) -> Any?) = attach(index, context, { null } to block)
+
+    fun captureImmediately(block: (Any?) -> Any?) = attachImmediately({ null }, block)
+    fun captureImmediately(context: CoroutineContext, block: (Any?) -> Any?) = attachImmediately(context, { null } to block)
 
     fun start(): Boolean {
         ln = -1

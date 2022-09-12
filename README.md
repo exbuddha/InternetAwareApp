@@ -40,6 +40,7 @@ is introduced that can schedule code to run in a context concurrent to the appli
 
        attach(Dispatchers.Unconfined, {
            // ... async work that runs along a main thread
+           // ... you can attach new work to start immediately after this work finishes
            result
        } to {
            // ... capture result on a main thread
@@ -49,7 +50,4 @@ is introduced that can schedule code to run in a context concurrent to the appli
            // ... sync work that runs along the main thread (null result)
        }
 
-   The runner may need to be resumed if it has completed by this time. Use `isObserving` to determine if the runner
-   is active.
-
-       if (!isObserving) resume()
+   The runner may need to be resumed again if it has completed by this time.
