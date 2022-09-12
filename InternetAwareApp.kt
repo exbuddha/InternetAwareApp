@@ -2,7 +2,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
     val startTime = now()
 
     lateinit var reactToNetworkCapabilitiesChanged: (Network, NetworkCapabilities) -> Unit
-    lateinit var reactToInternetAvailabilityChanged: () -> Unit
+    lateinit var reactToInternetAvailabilityChanged: (Boolean?) -> Unit
 
     override fun onCreate() {
         super.onCreate()
@@ -106,9 +106,9 @@ class InternetAwareApp : Application(), LiveDataRunner {
         Log.i(DB_TAG, "Updated network capabilities.")
     }
 
-    private fun reactToInternetAvailabilityChangedAsync() =
+    private fun reactToInternetAvailabilityChangedAsync(state: Boolean?) =
         attach { reactToInternetAvailabilityChanged() }
-    private fun reactToInternetAvailabilityChangedSync() =
+    private fun reactToInternetAvailabilityChangedSync(state: Boolean?) =
         runBlocking { reactToInternetAvailabilityChanged() }
     private suspend fun reactToInternetAvailabilityChanged() {
         updateNetworkState()
