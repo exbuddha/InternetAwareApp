@@ -5,6 +5,6 @@ val permissions
 
 fun <R> app(block: MediaPlayerApp.() -> R) = app.block()
 
-inline fun <R> trySafely(block: () -> R): R? = try { block() } catch(_: Throwable) { null }
+inline fun <reified R> trySafely(block: () -> R?) = try { block() } catch(_: Throwable) { R::class.objectInstance }
 
 fun now() = Calendar.getInstance().timeInMillis

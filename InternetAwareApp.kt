@@ -39,7 +39,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
             this@MediaPlayerApp.ex = ex
             ln -= 1
         }
-        try { truncateSession() } catch (_: Throwable) {}
+        trySafely { truncateSession() }
     }
 
     private suspend fun truncateSession() {
