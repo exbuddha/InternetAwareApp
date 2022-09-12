@@ -111,7 +111,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
         Log.i(DB_TAG, "Updated network state.")
     }
 
-    override val seq: MutableList<Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>> = mutableListOf()
+    override var seq: MutableList<Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>> = mutableListOf()
     override var ln = -1
     override var step: LiveData<*>? = null
     var isObserving = false
@@ -122,11 +122,9 @@ class InternetAwareApp : Application(), LiveDataRunner {
         super.reset()
         isObserving = false
     }
-    fun attach(block: suspend () -> Unit) {
-        fun async() = liveData { emit(block()) }
-        attach(::async)
+    override fun unload() {
+        if (!isObserving) super.unload()
     }
-    fun capture(block: (Any?) -> Any?) = attach({ null }, block)
 
     companion object {
         const val INET_TAG = "INTERNET"

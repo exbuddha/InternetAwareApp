@@ -19,6 +19,13 @@ interface LiveDataRunner : Observer<Any?> {
         seq.add(Pair(step, capture))
     }
 
+    fun attach(step: suspend () -> Unit) {
+        fun async() = liveData { emit(step()) }
+        attach(::async)
+    }
+
+    fun capture(block: (Any?) -> Any?) = attach({ null }, block)
+
     fun start(): Boolean {
         ln = -1
         return advance()
@@ -47,6 +54,11 @@ interface LiveDataRunner : Observer<Any?> {
 
     fun reset() {
         step?.removeObserver(this)
+    }
+
+    fun unload() {
+        seq = MutableList(seq.size - ln) { seq[it + ln] }
+        ln = 0
     }
 
     override fun onChanged(t: Any?) {

@@ -14,10 +14,11 @@ abstract class InternetAwareActivity : AppCompatActivity() {
             registerNetworkCapabilitiesCallback()
         if (enableInternetAvailabilityCallback)
             registerInternetAvailabilityCallback()
-        app.capture {
-            Log.i(SESSION_TAG, "Session id = ${session!!.id}")
+        app {
+            unload()
+            capture { Log.i(SESSION_TAG, "Session id = ${session!!.id}") }
+            resume()
         }
-        app.resume()
     }
 
     override fun onStop() {
