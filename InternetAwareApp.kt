@@ -117,14 +117,16 @@ class InternetAwareApp : Application(), LiveDataRunner {
     var isObserving = false
     var ex: Throwable? = null
     override fun advance() = super.advance().also { isObserving = it }
+    override fun resume() = isObserving || super.resume()
     override fun reset() {
         super.reset()
         isObserving = false
     }
-    private fun attach(block: suspend () -> Unit) {
+    fun attach(block: suspend () -> Unit) {
         fun async() = liveData { emit(block()) }
         attach(::async)
     }
+    fun capture(block: (Any?) -> Any?) = attach({ null }, block)
 
     companion object {
         const val INET_TAG = "INTERNET"

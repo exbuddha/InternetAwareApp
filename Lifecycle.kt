@@ -34,6 +34,8 @@ interface LiveDataRunner : Observer<Any?> {
             step = seq[ln].first.invoke()
             if (step?.observeForever(this) === Unit)
                 return true
+            else
+                seq[ln].second?.invoke(null)
         }
         return false
     }

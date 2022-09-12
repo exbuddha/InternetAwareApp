@@ -6,10 +6,6 @@ abstract class InternetAwareActivity : AppCompatActivity() {
 
     val internetAvailabilityLiveData: DifferenceLiveData<Boolean?>?
         get() = internetAvailabilityListener
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        if (!app.isObserving) app.resume()
-        super.onCreate(savedInstanceState)
     }
 
     override fun onResume() {
@@ -18,6 +14,10 @@ abstract class InternetAwareActivity : AppCompatActivity() {
             registerNetworkCapabilitiesCallback()
         if (enableInternetAvailabilityCallback)
             registerInternetAvailabilityCallback()
+        app.capture {
+            Log.i(SESSION_TAG, "Session id = ${session!!.id}")
+        }
+        app.resume()
     }
 
     override fun onStop() {
