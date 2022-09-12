@@ -25,10 +25,11 @@ class InternetAwareApp : Application(), LiveDataRunner {
                 runtimeDao.newSession()
                 emit(runtimeDao.getSession())
             }
-            truncateSession()
         } catch (ex: Throwable) {
-            this@InternetAwareApp.ex = ex
+            this@MediaPlayerApp.ex = ex
+            ln -= 1
         }
+        trySafelySuspended { truncateSession() }
     }
 
     private suspend fun truncateSession() {

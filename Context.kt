@@ -6,6 +6,7 @@ val permissions
 fun <R> app(block: MediaPlayerApp.() -> R) = app.block()
 
 fun <R> trySafely(block: () -> R): R? = try { block() } catch(_: Throwable) { null }
+suspend fun <R> trySafelySuspended(block: suspend () -> R): R? = try { block() } catch(_: Throwable) { null }
 fun <R> trySafely(fallback: R, block: () -> R) = try { block() } catch(_: Throwable) { fallback }
 
 fun now() = Calendar.getInstance().timeInMillis
