@@ -1,14 +1,23 @@
 class InternetAwareApp : Application(), LiveDataRunner {
     val startTime = now()
 
+    lateinit var reactToNetworkCapabilitiesChanged: (Network, NetworkCapabilities) -> Unit
+    lateinit var reactToInternetAvailabilityChanged: () -> Unit
+
     override fun onCreate() {
         super.onCreate()
         app = this
+
+        reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedAsync
+        reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedAsync
         attach(::newSession) {
-            session = it as AppRuntimeSessionEntity
-            reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedSync
-            reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedSync
-            Log.i(SESSION_TAG, "New session created.")
+            if (it is AppRuntimeSessionEntity) {
+                session = it
+                reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedSync
+                reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedSync
+                Log.i(SESSION_TAG, "New session created.")
+            }
+            else reset()
         }
         attach(::initNetworkState) {
             Log.i(SESSION_TAG, "Network state initialized.")
@@ -26,10 +35,11 @@ class InternetAwareApp : Application(), LiveDataRunner {
                 emit(runtimeDao.getSession())
             }
         } catch (ex: Throwable) {
+            emit(null)
             this@MediaPlayerApp.ex = ex
             ln -= 1
         }
-        trySafelySuspended { truncateSession() }
+        try { truncateSession() } catch (_: Throwable) {}
     }
 
     private suspend fun truncateSession() {
@@ -82,7 +92,6 @@ class InternetAwareApp : Application(), LiveDataRunner {
             .build()
     }
 
-    var reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedAsync
     private fun reactToNetworkCapabilitiesChangedAsync(network: Network, networkCapabilities: NetworkCapabilities) =
         attach { reactToNetworkCapabilitiesChanged(network, networkCapabilities) }
     private fun reactToNetworkCapabilitiesChangedSync(network: Network, networkCapabilities: NetworkCapabilities) =
@@ -97,7 +106,6 @@ class InternetAwareApp : Application(), LiveDataRunner {
         Log.i(DB_TAG, "Updated network capabilities.")
     }
 
-    var reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedAsync
     private fun reactToInternetAvailabilityChangedAsync() =
         attach { reactToInternetAvailabilityChanged() }
     private fun reactToInternetAvailabilityChangedSync() =

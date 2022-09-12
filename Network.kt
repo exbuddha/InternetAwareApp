@@ -65,8 +65,8 @@ private var connectivityRequest: NetworkRequest? = null
         addCapability(NET_CAPABILITY_INTERNET)
     }.also { field = it }
 
-private fun NetworkCapabilities.canSatisfy(request: NetworkRequest) = trySafely(false) {
+private fun NetworkCapabilities.canSatisfy(request: NetworkRequest) = try {
     request.canBeSatisfiedBy(this)
-}
+} catch (_: Throwable) { false }
 
 private inline fun buildNetworkRequest(block: NetworkRequest.Builder.() -> Unit) = NetworkRequest.Builder().apply(block).build()

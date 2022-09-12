@@ -27,7 +27,7 @@ is introduced that can schedule code to run in a context concurrent to the appli
 2. Attach the task to the application runner:
 
        attach(::runAsync) { result ->
-           // ... capture result on a main thread
+           // ... capture result on main thread
        }
 
 3. Start or resume the runner:
@@ -36,18 +36,18 @@ is introduced that can schedule code to run in a context concurrent to the appli
        resume()   // continues from last executed step (useful in case of errors)
 
 4. If there is work that may be started from a background thread while the runner is active simultaneously, such as a
-   callback on the connectivity thread, then that work must also be scheduled to run along main thread:
+   callback on the connectivity thread, then that work must also be scheduled to run along the main thread:
 
        attach(Dispatchers.Unconfined, {
-           // ... async work that runs along a main thread
+           // ... async work that runs along main thread
            // ... you can attach new work to start immediately after this work finishes
-           result
-       } to {
-           // ... capture result on a main thread
-       })
+           emit(result)
+       }) {
+           // ... capture result on main thread
+       }
 
        capture {
-           // ... sync work that runs along the main thread (null result)
+           // ... sync work that runs along main thread (null result)
        }
 
    The runner may need to be resumed again if it has completed by this time.

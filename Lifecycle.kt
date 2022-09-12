@@ -15,50 +15,54 @@ interface LiveDataRunner : Observer<Any?> {
     var ln: Int
     var step: LiveData<*>?
 
+    fun attach(step: Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>) {
+        seq.add(step)
+    }
     fun attach(step: () -> LiveData<*>?, capture: ((Any?) -> Any?)? = null) {
-        seq.add(Pair(step, capture))
+        attach(Pair(step, capture))
     }
-    fun attach(step: suspend () -> Unit) {
-        fun async() = liveData { emit(step()) }
-        attach(::async)
+    fun <T> attach(step: suspend LiveDataScope<T>.() -> Unit, capture: ((Any?) -> Any?)? = null) {
+        fun async() = liveData(block = step)
+        attach(::async, capture)
     }
-    fun attach(context: CoroutineContext, step: Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>) {
-        fun async() = liveData(context) { emit(step.first.invoke()) }
-        attach(::async, step.second)
+    fun <T> attach(context: CoroutineContext, step: suspend LiveDataScope<T>.() -> Unit, capture: ((Any?) -> Any?)? = null) {
+        fun async() = liveData(context, block = step)
+        attach(::async, capture)
     }
 
+    fun attach(index: Int, step: Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>) {
+        seq.add(index, step)
+    }
     fun attach(index: Int, step: () -> LiveData<*>?, capture: ((Any?) -> Any?)? = null) {
-        seq.add(index, Pair(step, capture))
+        attach(index, Pair(step, capture))
     }
-    fun attach(index: Int, step: suspend () -> Unit) {
-        fun async() = liveData { emit(step()) }
-        attach(index, ::async)
+    fun <T> attach(index: Int, step: suspend LiveDataScope<T>.() -> Unit, capture: ((Any?) -> Any?)? = null) {
+        fun async() = liveData(block = step)
+        attach(index, ::async, capture)
     }
-    fun attach(index: Int, context: CoroutineContext, step: Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>) {
-        fun async() = liveData(context) { emit(step.first.invoke()) }
-        attach(index, ::async, step.second)
+    fun <T> attach(index: Int, context: CoroutineContext, step: suspend LiveDataScope<T>.() -> Unit, capture: ((Any?) -> Any?)? = null) {
+        fun async() = liveData(context, block = step)
+        attach(index, ::async, capture)
     }
 
+    fun attachImmediately(step: Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>) {
+        seq.add(ln + 1, step)
+    }
     fun attachImmediately(step: () -> LiveData<*>?, capture: ((Any?) -> Any?)? = null) {
-        seq.add(ln + 1, Pair(step, capture))
+        attachImmediately(Pair(step, capture))
     }
-    fun attachImmediately(step: suspend () -> Unit) {
-        fun async() = liveData { emit(step()) }
-        attachImmediately(::async)
+    fun <T> attachImmediately(step: suspend LiveDataScope<T>.() -> Unit, capture: ((Any?) -> Any?)? = null) {
+        fun async() = liveData(block = step)
+        attachImmediately(::async, capture)
     }
-    fun attachImmediately(context: CoroutineContext, step: Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>) {
-        fun async() = liveData(context) { emit(step.first.invoke()) }
-        attachImmediately(::async, step.second)
+    fun <T> attachImmediately(context: CoroutineContext, step: suspend LiveDataScope<T>.() -> Unit, capture: ((Any?) -> Any?)? = null) {
+        fun async() = liveData(context, block = step)
+        attachImmediately(::async, capture)
     }
 
-    fun capture(block: (Any?) -> Any?) = attach({ null }, block)
-    fun capture(context: CoroutineContext, block: (Any?) -> Any?) = attach(context, { null } to block)
-
-    fun capture(index: Int, block: (Any?) -> Any?) = attach(index, { null }, block)
-    fun capture(index: Int, context: CoroutineContext, block: (Any?) -> Any?) = attach(index, context, { null } to block)
-
-    fun captureImmediately(block: (Any?) -> Any?) = attachImmediately({ null }, block)
-    fun captureImmediately(context: CoroutineContext, block: (Any?) -> Any?) = attachImmediately(context, { null } to block)
+    fun capture(block: (Any?) -> Any?) = attach({ null } to block)
+    fun capture(index: Int, block: (Any?) -> Any?) = attach(index, { null } to block)
+    fun captureImmediately(block: (Any?) -> Any?) = attachImmediately({ null } to block)
 
     fun start(): Boolean {
         ln = -1
