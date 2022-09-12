@@ -50,7 +50,7 @@ private var networkCapabilitiesListener: NetworkCallback? = null
     get() = field ?: object : NetworkCallback() {
         override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
             super.onCapabilitiesChanged(network, networkCapabilities)
-            app.reactToNetworkCapabilitiesChanged(network, networkCapabilities)
+            app.reactToNetworkCapabilitiesChanged.invoke(network, networkCapabilities)
         }
     }.also { field = it }
 

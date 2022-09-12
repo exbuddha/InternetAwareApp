@@ -74,7 +74,7 @@ abstract class InternetAwareActivity : AppCompatActivity() {
 
     open fun runInternetAvailabilityTest() = app.runInternetAvailabilityTest()
 
-    open fun reactToInternetAvailabilityChanged(state: Boolean?) = app.reactToInternetAvailabilityChanged()
+    open fun reactToInternetAvailabilityChanged(state: Boolean?) = app.reactToInternetAvailabilityChanged.invoke()
 
     private var internetAvailabilityListener: DifferenceListener<Boolean?>? = null
     private fun requireInternetAvailabilityListener() =

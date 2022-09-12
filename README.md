@@ -35,9 +35,14 @@ is introduced that can schedule code to run in a context concurrent to the appli
        start()    // restarts all steps
        resume()   // continues from last executed step (useful in case of errors)
 
-4. If there is work that may be started from a background thread while the runner is running simultaneously, such as a
+4. If there is work that may be started from a background thread while the runner is active simultaneously, such as a
    callback on the connectivity thread, then that work must also be scheduled to run after the session is created:
 
-       attachOnNullSession {
+       attach {
            // ... work that needs to run only after new session is acquired
        }
+
+   The runner may need to be resumed if it has completed by this time. Use `isObserving` to determine if the runner
+   is active.
+
+       if (!isObserving) resume()

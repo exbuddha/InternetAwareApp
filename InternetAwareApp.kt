@@ -6,6 +6,8 @@ class InternetAwareApp : Application(), LiveDataRunner {
         app = this
         attach(::newSession) {
             session = it as AppRuntimeSessionEntity
+            reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedSync
+            reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedSync
             Log.i(SESSION_TAG, "New session created.")
         }
         attach(::initNetworkState) {
@@ -79,11 +81,14 @@ class InternetAwareApp : Application(), LiveDataRunner {
             .build()
     }
 
-    fun reactToNetworkCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
-        attachOnNullSession {
-            updateNetworkCapabilities(newNetworkCapabilities)
-            Log.i(INET_TAG, "Network capabilities have changed.")
-        }
+    var reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedAsync
+    private fun reactToNetworkCapabilitiesChangedAsync(network: Network, networkCapabilities: NetworkCapabilities) =
+        attach { reactToNetworkCapabilitiesChanged(network, networkCapabilities) }
+    private fun reactToNetworkCapabilitiesChangedSync(network: Network, networkCapabilities: NetworkCapabilities) =
+        runBlocking { reactToNetworkCapabilitiesChanged(network, networkCapabilities) }
+    private suspend fun reactToNetworkCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+        updateNetworkCapabilities(networkCapabilities)
+        Log.i(INET_TAG, "Network capabilities have changed.")
     }
 
     private suspend fun updateNetworkCapabilities(networkCapabilities: NetworkCapabilities) {
@@ -91,11 +96,14 @@ class InternetAwareApp : Application(), LiveDataRunner {
         Log.i(DB_TAG, "Updated network capabilities.")
     }
 
-    fun reactToInternetAvailabilityChanged() {
-        attachOnNullSession {
-            updateNetworkState()
-            Log.i(INET_TAG, "Internet availability has changed.")
-        }
+    var reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedAsync
+    private fun reactToInternetAvailabilityChangedAsync() =
+        attach { reactToInternetAvailabilityChanged() }
+    private fun reactToInternetAvailabilityChangedSync() =
+        runBlocking { reactToInternetAvailabilityChanged() }
+    private suspend fun reactToInternetAvailabilityChanged() {
+        updateNetworkState()
+        Log.i(INET_TAG, "Internet availability has changed.")
     }
 
     private suspend fun updateNetworkState() {
@@ -113,13 +121,9 @@ class InternetAwareApp : Application(), LiveDataRunner {
         super.reset()
         isObserving = false
     }
-
-    private fun attachOnNullSession(block: suspend () -> Unit) {
-        if (session === null) {
-            fun async() = liveData { emit(block()) }
-            attach(::async)
-        }
-        else runBlocking { block() }
+    private fun attach(block: suspend () -> Unit) {
+        fun async() = liveData { emit(block()) }
+        attach(::async)
     }
 
     companion object {
