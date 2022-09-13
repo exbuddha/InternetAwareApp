@@ -77,8 +77,11 @@ interface LiveDataRunner<T> : Observer<T> {
             else
                 seq[ln].second?.invoke(null)
         }
+        end()
         return false
     }
+
+    fun end() {}
 
     fun capture(t: T) {
         seq[ln].second?.invoke(t)

@@ -109,18 +109,31 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
     override var seq: MutableList<Pair<() -> LiveData<Any?>?, ((Any?) -> Any?)?>> = mutableListOf()
     override var ln = -1
     override var step: LiveData<Any?>? = null
+    var isActive = false
+        private set
+        get() = field || isObserving
     var isObserving = false
+        private set
     var ex: Throwable? = null
-    override fun start() = super.start().also { isObserving = it }
+    override fun start() =
+        if (isActive) true
+        else {
+            isActive = true
+            super.start()
+        }
+    override fun resume() =
+        if (isActive) true
+        else {
+            isActive = true
+            super.resume()
+        }
     override fun advance() = super.advance().also { isObserving = it }
-    override fun resume() = isObserving || super.resume()
+    override fun end() { isActive = false }
     override fun reset() {
         super.reset()
         isObserving = false
     }
-    override fun unload() {
-        if (!isObserving) super.unload()
-    }
+    override fun unload() { if (!isActive) super.unload() }
 
     companion object {
         const val INET_TAG = "INTERNET"
