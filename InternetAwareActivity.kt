@@ -96,6 +96,6 @@ abstract class InternetAwareActivity : AppCompatActivity() {
     private var lastInternetAvailabilityTestTime = 0L
         set(value) {
             field = value
-            InternetAwareApp.lastInternetAvailabilityTestTime = value
+            lastInternetAvailabilityTestTime = value
         }
 }
