@@ -11,39 +11,32 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
         reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedAsync
         reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedAsync
         io(::newSession) {
-            if (it is AppRuntimeSessionEntity) {
-                session = it
+            matchTypeOrRetry<AppRuntimeSessionEntity>(it) {
+                session = it as AppRuntimeSessionEntity
                 reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedSync
                 reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedSync
                 Log.i(SESSION_TAG, "New session created.")
             }
-            else reset()
         }
         io(::initNetworkState) {
-            if (it === Unit)
+            unitOrReset(it) {
                 Log.i(SESSION_TAG, "Network state initialized.")
-            else
-                 reset()
+            }
         }
         io(::initNetworkCapabilities) {
-            if (it === Unit)
+            unitOrReset(it) {
                 Log.i(SESSION_TAG, "Network capabilities initialized.")
-            else
-                 reset()
+            }
         }
         start()
     }
 
     private suspend fun newSession(scope: LiveDataScope<Any?>) { scope.apply {
-        try {
+        nullOnError {
             if (latestValue === null) {
                 runtimeDao.newSession()
                 emit(runtimeDao.getSession())
             }
-        } catch (ex: Throwable) {
-            this@InternetAwareApp.ex = ex
-            ln -= 1
-            emit(null)
         }
         trySafely { truncateSession() }
     } }
@@ -55,24 +48,16 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
     }
 
     private suspend fun initNetworkState(scope: LiveDataScope<Any?>) { scope.apply {
-        try {
+        unitOnSuccess {
             if (networkStateDao.getNetworkState()?.sid?.equals(session?.id) == false)
                 networkStateDao.updateNetworkState()
-            emit(Unit)
-        } catch (ex: Throwable) {
-            this@InternetAwareApp.ex = ex
-            emit(null)
         }
     } }
 
     private suspend fun initNetworkCapabilities(scope: LiveDataScope<Any?>) { scope.apply {
-        try {
+        unitOnSuccess {
             if (networkCapabilitiesDao.getNetworkCapabilities()?.sid?.equals(session?.id) == false)
                 networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities!!)
-            emit(Unit)
-        } catch (ex: Throwable) {
-            this@InternetAwareApp.ex = ex
-            emit(null)
         }
     } }
 

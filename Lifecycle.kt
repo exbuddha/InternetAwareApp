@@ -108,3 +108,34 @@ interface LiveDataRunner<T> : Observer<T> {
         advance()
     }
 }
+
+suspend inline fun <T> LiveDataScope<T?>.nullOnError(block: LiveDataScope<T?>.() -> Any?) {
+    try { block() } catch (ex: Throwable) {
+        app.ex = ex
+        emit(null)
+    }
+}
+suspend inline fun LiveDataScope<Any?>.unitOnSuccess(block: LiveDataScope<Any?>.() -> Any?) {
+    try {
+        block()
+        emit(Unit)
+    } catch (ex: Throwable) {
+        app.ex = ex
+        emit(null)
+    }
+}
+
+inline fun LiveDataRunner<Any?>.unitOrReset(t: Any?, block: () -> Any?) {
+    if (t === Unit)
+        block()
+    else
+        reset()
+}
+inline fun <reified T> LiveDataRunner<Any?>.matchTypeOrRetry(t: Any?, block: LiveDataRunner<Any?>.(Any?) -> Any?) {
+    if (t is T)
+        block(t)
+    else {
+        ln =- 1
+        reset()
+    }
+}
