@@ -96,6 +96,11 @@ interface LiveDataRunner<T> : Observer<T> {
         step?.removeObserver(this)
     }
 
+    fun retry() {
+        ln =- 1
+        reset()
+    }
+
     fun unload() {
         if (ln > 0) {
             seq = MutableList(seq.size - ln) { seq[it + ln] }
@@ -125,17 +130,15 @@ suspend inline fun LiveDataScope<Any?>.unitOnSuccess(block: LiveDataScope<Any?>.
     }
 }
 
-inline fun LiveDataRunner<Any?>.unitOrReset(t: Any?, block: LiveDataRunner<Any?>.() -> Any?) {
+inline fun <reified T> LiveDataRunner<Any?>.nonNullOrRetry(t: Any?, block: (T) -> Any?) {
+    if (t !== null)
+        block(t as T)
+    else
+        retry()
+}
+inline fun LiveDataRunner<Any?>.unitOrReset(t: Any?, block: () -> Any?) {
     if (t === Unit)
         block()
     else
         reset()
-}
-inline fun <reified T> LiveDataRunner<Any?>.matchTypeOrRetry(t: Any?, block: LiveDataRunner<Any?>.(Any?) -> Any?) {
-    if (t is T)
-        block(t)
-    else {
-        ln =- 1
-        reset()
-    }
 }

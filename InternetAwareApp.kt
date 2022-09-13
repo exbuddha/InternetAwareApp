@@ -11,8 +11,8 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
         reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedAsync
         reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedAsync
         io(::newSession) {
-            matchTypeOrRetry<AppRuntimeSessionEntity>(it) {
-                session = it as AppRuntimeSessionEntity
+            nonNullOrRetry<AppRuntimeSessionEntity>(it) {
+                session = it
                 reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedSync
                 reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedSync
                 Log.i(SESSION_TAG, "New session created.")
