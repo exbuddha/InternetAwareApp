@@ -10,59 +10,61 @@ abstract class DifferenceListener<T> : DifferenceLiveData<T>(), Observer<T> {
     open fun removeObserver() = removeObserver(this)
 }
 
-interface LiveDataRunner : Observer<Any?> {
-    var seq: MutableList<Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>>
+interface LiveDataRunner<T> : Observer<T> {
+    var seq: MutableList<Pair<() -> LiveData<T>?, ((T?) -> Any?)?>>
     var ln: Int
-    var step: LiveData<*>?
+    var step: LiveData<T>?
 
-    fun attach(step: Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>) {
+    fun attach(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
         seq.add(step)
     }
-    fun attach(step: () -> LiveData<*>?, capture: ((Any?) -> Any?)? = null) {
-        attach(Pair(step, capture))
-    }
-    fun <T> attach(step: suspend LiveDataScope<T>.() -> Unit, capture: ((Any?) -> Any?)? = null) {
+    fun attach(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) {
         fun async() = liveData(block = step)
-        attach(::async, capture)
+        attach(Pair(::async, capture))
     }
-    fun <T> attach(context: CoroutineContext, step: suspend LiveDataScope<T>.() -> Unit, capture: ((Any?) -> Any?)? = null) {
+    fun attach(context: CoroutineContext, step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) {
         fun async() = liveData(context, block = step)
-        attach(::async, capture)
+        attach(Pair(::async, capture))
     }
+    fun io(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
+        attach(Dispatchers.IO, step, capture)
+    fun unconfined(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
+        attach(Dispatchers.Unconfined, step, capture)
 
-    fun attach(index: Int, step: Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>) {
+    fun attach(index: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
         seq.add(index, step)
     }
-    fun attach(index: Int, step: () -> LiveData<*>?, capture: ((Any?) -> Any?)? = null) {
-        attach(index, Pair(step, capture))
-    }
-    fun <T> attach(index: Int, step: suspend LiveDataScope<T>.() -> Unit, capture: ((Any?) -> Any?)? = null) {
+    fun attach(index: Int, step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) {
         fun async() = liveData(block = step)
-        attach(index, ::async, capture)
+        attach(index, Pair(::async, capture))
     }
-    fun <T> attach(index: Int, context: CoroutineContext, step: suspend LiveDataScope<T>.() -> Unit, capture: ((Any?) -> Any?)? = null) {
+    fun attach(index: Int, context: CoroutineContext, step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) {
         fun async() = liveData(context, block = step)
-        attach(index, ::async, capture)
+        attach(index, Pair(::async, capture))
     }
+    fun io(index: Int, step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
+        attach(index, Dispatchers.IO, step, capture)
+    fun unconfined(index: Int, step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
+        attach(index, Dispatchers.Unconfined, step, capture)
 
-    fun attachImmediately(step: Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>) {
+    fun attachImmediately(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
         attach(ln + 1, step)
-    }
-    fun attachImmediately(step: () -> LiveData<*>?, capture: ((Any?) -> Any?)? = null) {
-        attachImmediately(Pair(step, capture))
-    }
-    fun <T> attachImmediately(step: suspend LiveDataScope<T>.() -> Unit, capture: ((Any?) -> Any?)? = null) {
+    fun attachImmediately(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) {
         fun async() = liveData(block = step)
-        attachImmediately(::async, capture)
+        attachImmediately(Pair(::async, capture))
     }
-    fun <T> attachImmediately(context: CoroutineContext, step: suspend LiveDataScope<T>.() -> Unit, capture: ((Any?) -> Any?)? = null) {
+    fun attachImmediately(context: CoroutineContext, step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) {
         fun async() = liveData(context, block = step)
-        attachImmediately(::async, capture)
+        attachImmediately(Pair(::async, capture))
     }
+    fun ioImmediately(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
+        attachImmediately(Dispatchers.IO, step, capture)
+    fun unconfinedImmediately(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
+        attachImmediately(Dispatchers.Unconfined, step, capture)
 
-    fun capture(block: (Any?) -> Any?) = attach({ null } to block)
-    fun capture(index: Int, block: (Any?) -> Any?) = attach(index, { null } to block)
-    fun captureImmediately(block: (Any?) -> Any?) = attachImmediately({ null } to block)
+    fun capture(block: (T?) -> Any?) = attach({ null } to block)
+    fun capture(index: Int, block: (T?) -> Any?) = attach(index, { null } to block)
+    fun captureImmediately(block: (T?) -> Any?) = attachImmediately({ null } to block)
 
     fun start(): Boolean {
         ln = -1
@@ -85,7 +87,7 @@ interface LiveDataRunner : Observer<Any?> {
         return false
     }
 
-    fun capture(t: Any?) {
+    fun capture(t: T) {
         seq[ln].second?.invoke(t)
         reset()
     }
@@ -101,7 +103,7 @@ interface LiveDataRunner : Observer<Any?> {
         }
     }
 
-    override fun onChanged(t: Any?) {
+    override fun onChanged(t: T) {
         capture(t)
         advance()
     }

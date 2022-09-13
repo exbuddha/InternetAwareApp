@@ -1,4 +1,4 @@
-class InternetAwareApp : Application(), LiveDataRunner {
+class InternetAwareApp : Application(), LiveDataRunner<Any?> {
     var startTime = now()
 
     lateinit var reactToNetworkCapabilitiesChanged: (Network, NetworkCapabilities) -> Unit
@@ -10,7 +10,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
 
         reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedAsync
         reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedAsync
-        attach(::newSession) {
+        io(::newSession) {
             if (it is AppRuntimeSessionEntity) {
                 session = it
                 reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedSync
@@ -19,13 +19,13 @@ class InternetAwareApp : Application(), LiveDataRunner {
             }
             else reset()
         }
-        attach(::initNetworkState) {
+        io(::initNetworkState) {
             if (it === Unit)
                 Log.i(SESSION_TAG, "Network state initialized.")
             else
                  reset()
         }
-        attach(::initNetworkCapabilities) {
+        io(::initNetworkCapabilities) {
             if (it === Unit)
                 Log.i(SESSION_TAG, "Network capabilities initialized.")
             else
@@ -34,7 +34,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
         isObserving = start()
     }
 
-    private fun newSession() = liveData(Dispatchers.IO) {
+    private suspend fun newSession(scope: LiveDataScope<Any?>) { scope.apply {
         try {
             if (latestValue === null) {
                 runtimeDao.newSession()
@@ -46,7 +46,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
             emit(null)
         }
         trySafely { truncateSession() }
-    }
+    } }
 
     private suspend fun truncateSession() {
         runtimeDao.truncateSessions()
@@ -54,7 +54,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
         networkCapabilitiesDao.truncateNetworkCapabilities()
     }
 
-    private fun initNetworkState() = liveData(Dispatchers.IO) {
+    private suspend fun initNetworkState(scope: LiveDataScope<Any?>) { scope.apply {
         try {
             if (networkStateDao.getNetworkState()?.sid?.equals(session?.id) == false)
                 networkStateDao.updateNetworkState()
@@ -63,9 +63,9 @@ class InternetAwareApp : Application(), LiveDataRunner {
             this@InternetAwareApp.ex = ex
             emit(null)
         }
-    }
+    } }
 
-    private fun initNetworkCapabilities() = liveData(Dispatchers.IO) {
+    private suspend fun initNetworkCapabilities(scope: LiveDataScope<Any?>) { scope.apply {
         try {
             if (networkCapabilitiesDao.getNetworkCapabilities()?.sid?.equals(session?.id) == false)
                 networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities!!)
@@ -74,7 +74,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
             this@InternetAwareApp.ex = ex
             emit(null)
         }
-    }
+    } }
 
     fun runInternetAvailabilityTest(): Boolean {
         Log.i(INET_TAG, "Trying to send out http request for internet availability...")
@@ -101,7 +101,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
     }
 
     private fun reactToNetworkCapabilitiesChangedAsync(network: Network, networkCapabilities: NetworkCapabilities) =
-        attach<Unit>({ reactToNetworkCapabilitiesChanged(network, networkCapabilities) })
+        attach({ reactToNetworkCapabilitiesChanged(network, networkCapabilities) })
     private fun reactToNetworkCapabilitiesChangedSync(network: Network, networkCapabilities: NetworkCapabilities) =
         runBlocking { reactToNetworkCapabilitiesChanged(network, networkCapabilities) }
     private suspend fun reactToNetworkCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
@@ -115,7 +115,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
     }
 
     private fun reactToInternetAvailabilityChangedAsync(state: Boolean?) =
-        attach<Unit>({ reactToInternetAvailabilityChanged() })
+        attach({ reactToInternetAvailabilityChanged() })
     private fun reactToInternetAvailabilityChangedSync(state: Boolean?) =
         runBlocking { reactToInternetAvailabilityChanged() }
     private suspend fun reactToInternetAvailabilityChanged() {
@@ -128,9 +128,9 @@ class InternetAwareApp : Application(), LiveDataRunner {
         Log.i(DB_TAG, "Updated network state.")
     }
 
-    override var seq: MutableList<Pair<() -> LiveData<*>?, ((Any?) -> Any?)?>> = mutableListOf()
+    override var seq: MutableList<Pair<() -> LiveData<Any?>?, ((Any?) -> Any?)?>> = mutableListOf()
     override var ln = -1
-    override var step: LiveData<*>? = null
+    override var step: LiveData<Any?>? = null
     var isObserving = false
     var ex: Throwable? = null
     override fun advance() = super.advance().also { isObserving = it }

@@ -11,9 +11,9 @@ One challenge that the code neatly solves is to postpone work to a later time un
 In order to achieve this while keeping the design restriction to never block the main thread in mind, a runner
 is introduced that can schedule code to run in a context concurrent to the application in a few simple steps:
 
-1. Declare the async work as a function returning a live data object that is assigned to run in a background context:
+1. Declare the async work as a function accepting a live data scope that will be used in a background context:
   
-       private fun runAsync() = liveData(Dispatchers.IO) {
+       suspend fun runAsync(scope: LiveDataScope<Any?>) { scope.apply {
            try {
                // ... perform blocking task
            }
@@ -22,11 +22,11 @@ is introduced that can schedule code to run in a context concurrent to the appli
                    throw ex
            }
            emit(result)
-       }
+       } }
 
-2. Attach the task to the application runner:
+2. Attach the work to the application runner:
 
-       attach(::runAsync) { result ->
+       attach(Dispatchers.IO, ::runAsync) { result ->
            // ... capture result on main thread
        }
 
