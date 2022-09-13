@@ -14,7 +14,7 @@ val hasWifi
     get() = networkCapabilities?.hasTransport(TRANSPORT_WIFI) ?: false
 
 const val internetAvailabilityTimeIntervalMin = 3000L
-var internetAvailabilityTimeInterval = internetAvailabilityTimeIntervalMin
+var internetAvailabilityTimeInterval = 10000L
     set(value) {
         field = if (value < internetAvailabilityTimeIntervalMin)
             internetAvailabilityTimeIntervalMin

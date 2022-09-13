@@ -84,7 +84,6 @@ abstract class InternetAwareActivity : AppCompatActivity() {
                 restartInternetAvailabilityCallback()
                 super.observe(owner, observer)
             }
-
             override fun onChanged(value: Boolean?) {
                 super.onChanged(value)
                 reactToInternetAvailabilityChanged(value)

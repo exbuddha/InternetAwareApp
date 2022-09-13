@@ -1,5 +1,5 @@
 class InternetAwareApp : Application(), LiveDataRunner {
-    val startTime = now()
+    var startTime = now()
 
     lateinit var reactToNetworkCapabilitiesChanged: (Network, NetworkCapabilities) -> Unit
     lateinit var reactToInternetAvailabilityChanged: (Boolean?) -> Unit
