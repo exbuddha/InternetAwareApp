@@ -14,7 +14,7 @@ val hasWifi
     get() = networkCapabilities?.hasTransport(TRANSPORT_WIFI) ?: false
 
 const val internetAvailabilityTimeIntervalMin = 3000L
-var internetAvailabilityTimeInterval = 10000L
+var internetAvailabilityTimeInterval = internetAvailabilityTimeIntervalMin
     set(value) {
         field = if (value < internetAvailabilityTimeIntervalMin)
             internetAvailabilityTimeIntervalMin
@@ -28,12 +28,6 @@ val isInternetAvailabilityTimeIntervalExceeded
     get() = isTimeIntervalExceeded(internetAvailabilityTimeInterval, lastInternetAvailabilityTestTime)
 fun isTimeIntervalExceeded(interval: Long, last: Long) =
     (now() - last).let { it >= interval || it < 0 } || last == 0L
-
-abstract class InternetAvailabilityListener : DifferenceListener<Boolean?>() {
-    override fun onChanged(value: Boolean?) {
-        hasInternet = value == true
-    }
-}
 
 fun registerNetworkCapabilitiesCallback() {
     networkCapabilitiesListener?.let { connectivityManager?.registerDefaultNetworkCallback(it) }

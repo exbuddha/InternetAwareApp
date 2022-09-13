@@ -4,9 +4,6 @@ abstract class InternetAwareActivity : AppCompatActivity() {
     var enableInternetAvailabilityCallback = true
         get() = field && isInternetAccessPermitted
 
-    val internetAvailabilityLiveData: DifferenceLiveData<Boolean?>?
-        get() = internetAvailabilityListener
-
     override fun onResume() {
         super.onResume()
         if (enableNetworkCapabilitiesCallback)
@@ -23,17 +20,17 @@ abstract class InternetAwareActivity : AppCompatActivity() {
     override fun onStop() {
         unregisterNetworkCapabilitiesCallback()
         unregisterInternetAvailabilityCallback()
-        internetAvailabilityListener = null
+        internetAvailabilityLiveData = null
         clearNetworkCapabilitiesObjects()
         super.onStop()
     }
 
     fun registerInternetAvailabilityCallback() {
-        requireInternetAvailabilityListener().observe(this)
+        (internetAvailabilityLiveData as? MutableLiveDataObserver)?.observe(this)
     }
 
     fun unregisterInternetAvailabilityCallback() {
-        internetAvailabilityListener?.removeObserver()
+        (internetAvailabilityLiveData as? MutableLiveDataObserver)?.removeObserver()
     }
 
     fun restartInternetAvailabilityCallback() {
@@ -41,12 +38,14 @@ abstract class InternetAwareActivity : AppCompatActivity() {
             detectInternetAvailabilityJob = lifecycleScope.launch(Dispatchers.IO) {
                 while (isActive) {
                     if (repeatInternetAvailabilityTest && isInternetAvailabilityTimeIntervalExceeded) {
-                        internetAvailabilityListener?.postValue(trySafely {
+                        trySafely {
                             isConnected && runInternetAvailabilityTest().also { isSuccessful ->
                                 if (isSuccessful)
                                     lastInternetAvailabilityTestTime = now()
                             }
-                        })
+                        }.also {
+                            internetAvailabilityLiveData?.postValue(it)
+                        }
                     }
                     delay(testInternetAvailabilityDelay)
                 }
@@ -75,18 +74,20 @@ abstract class InternetAwareActivity : AppCompatActivity() {
 
     open fun reactToInternetAvailabilityChanged(state: Boolean?) = app.reactToInternetAvailabilityChanged.invoke(state)
 
-    private var internetAvailabilityListener: DifferenceListener<Boolean?>? = null
-    private fun requireInternetAvailabilityListener() =
-        internetAvailabilityListener ?: object : InternetAvailabilityListener() {
+    var internetAvailabilityLiveData: MutableLiveData<Boolean?>? = null
+        private set
+        get() = field ?: object : MutableLiveDataObserver<Boolean?>() {
             override fun observe(owner: LifecycleOwner, observer: Observer<in Boolean?>) {
                 restartInternetAvailabilityCallback()
                 super.observe(owner, observer)
             }
+            override fun postValue(value: Boolean?) {
+                if (value != this.value) super.postValue(value)
+            }
             override fun onChanged(value: Boolean?) {
-                super.onChanged(value)
                 reactToInternetAvailabilityChanged(value)
             }
-        }.also { internetAvailabilityListener = it }
+        }.also { field = it }
 
     private var detectInternetAvailabilityJob: Job? = null
     private var repeatInternetAvailabilityTest = true
