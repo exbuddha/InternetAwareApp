@@ -41,7 +41,7 @@ class InternetAwareApp : Application(), LiveDataRunner {
                 emit(runtimeDao.getSession())
             }
         } catch (ex: Throwable) {
-            this@MediaPlayerApp.ex = ex
+            this@InternetAwareApp.ex = ex
             ln -= 1
             emit(null)
         }
