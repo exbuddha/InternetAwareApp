@@ -31,7 +31,7 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
             else
                  reset()
         }
-        isObserving = start()
+        start()
     }
 
     private suspend fun newSession(scope: LiveDataScope<Any?>) { scope.apply {
@@ -133,6 +133,7 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
     override var step: LiveData<Any?>? = null
     var isObserving = false
     var ex: Throwable? = null
+    override fun start() = super.start().also { isObserving = it }
     override fun advance() = super.advance().also { isObserving = it }
     override fun resume() = isObserving || super.resume()
     override fun reset() {
