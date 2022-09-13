@@ -57,9 +57,9 @@ private var networkCapabilitiesListener: NetworkCallback? = null
 private val connectivityManager
     get() = app.getSystemService(ConnectivityManager::class.java)
 private val network
-    get() = connectivityManager?.let { (it.activeNetwork) }
+    get() = connectivityManager?.activeNetwork
 val networkCapabilities
-    get() = connectivityManager?.let { (it.getNetworkCapabilities(it.activeNetwork)) }
+    get() = connectivityManager?.let { it.getNetworkCapabilities(it.activeNetwork) }
 private var connectivityRequest: NetworkRequest? = null
     get() = field ?: buildNetworkRequest {
         addCapability(NET_CAPABILITY_INTERNET)
