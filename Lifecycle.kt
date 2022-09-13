@@ -111,7 +111,8 @@ interface LiveDataRunner<T> : Observer<T> {
 }
 
 suspend inline fun <T> LiveDataScope<T?>.nullOnError(block: LiveDataScope<T?>.() -> Any?) {
-    try { block() } catch (ex: Throwable) {
+    try { block() }
+    catch (ex: Throwable) {
         app.ex = ex
         emit(null)
     }

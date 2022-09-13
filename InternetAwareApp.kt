@@ -134,6 +134,10 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
         isObserving = false
     }
     override fun unload() { if (!isActive) super.unload() }
+    override fun onChanged(t: Any?) {
+        try { super.onChanged(t) }
+        catch (_: Throwable) { isActive = false }
+    }
 
     companion object {
         const val INET_TAG = "INTERNET"
