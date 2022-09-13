@@ -6,7 +6,6 @@ abstract class InternetAwareActivity : AppCompatActivity() {
 
     val internetAvailabilityLiveData: DifferenceLiveData<Boolean?>?
         get() = internetAvailabilityListener
-    }
 
     override fun onResume() {
         super.onResume()
