@@ -125,7 +125,7 @@ suspend inline fun LiveDataScope<Any?>.unitOnSuccess(block: LiveDataScope<Any?>.
     }
 }
 
-inline fun LiveDataRunner<Any?>.unitOrReset(t: Any?, block: () -> Any?) {
+inline fun LiveDataRunner<Any?>.unitOrReset(t: Any?, block: LiveDataRunner<Any?>.() -> Any?) {
     if (t === Unit)
         block()
     else
