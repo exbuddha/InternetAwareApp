@@ -5,6 +5,6 @@ val permissions
 
 fun <R> app(block: InternetAwareApp.() -> R) = app.block()
 
-inline fun <reified R> trySafely(block: () -> R?) = try { block() } catch(_: Throwable) { R::class.objectInstance }
+inline fun <R> trySafely(block: () -> R?) = try { block() } catch(_: Throwable) { null }
 
 fun now() = Calendar.getInstance().timeInMillis
