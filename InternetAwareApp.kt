@@ -18,14 +18,14 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
                 Log.i(SESSION_TAG, "New session created.")
             }
         }
-        io(::initNetworkState) {
-            unitOrReset(it) {
-                Log.i(SESSION_TAG, "Network state initialized.")
-            }
-        }
         io(::initNetworkCapabilities) {
             unitOrReset(it) {
                 Log.i(SESSION_TAG, "Network capabilities initialized.")
+            }
+        }
+        io(::initNetworkState) {
+            unitOrReset(it) {
+                Log.i(SESSION_TAG, "Network state initialized.")
             }
         }
         start()
@@ -40,49 +40,22 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
         }
         trySafely { truncateSession() }
     } }
-
-    private suspend fun truncateSession() {
-        runtimeDao.truncateSessions()
-        networkStateDao.truncateNetworkStates()
-        networkCapabilitiesDao.truncateNetworkCapabilities()
-    }
-
-    private suspend fun initNetworkState(scope: LiveDataScope<Any?>) { scope.apply {
-        unitOnSuccess {
-            if (networkStateDao.getNetworkState()?.sid?.equals(session?.id) == false)
-                networkStateDao.updateNetworkState()
-        }
-    } }
-
     private suspend fun initNetworkCapabilities(scope: LiveDataScope<Any?>) { scope.apply {
         unitOnSuccess {
             if (networkCapabilitiesDao.getNetworkCapabilities()?.sid?.equals(session?.id) == false)
                 networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities!!)
         }
     } }
-
-    fun runInternetAvailabilityTest(): Boolean {
-        Log.i(INET_TAG, "Trying to send out http request for internet availability...")
-        return requireHttpClientForInternetAvailabilityTest()
-            .newCall(requireHttpRequestForInternetAvailabilityTest())
-            .execute().let { response ->
-                response.isSuccessful.also {
-                    response.close()
-                    Log.i(INET_TAG, "Received response for internet availability.")
-                }
-            }
-    }
-
-    private fun requireHttpClientForInternetAvailabilityTest(): OkHttpClient {
-        return OkHttpClient.Builder()
-            .retryOnConnectionFailure(false)
-            .build()
-    }
-
-    private fun requireHttpRequestForInternetAvailabilityTest(): Request {
-        return Request.Builder()
-            .url("https://httpbin.org/delay/1")
-            .build()
+    private suspend fun initNetworkState(scope: LiveDataScope<Any?>) { scope.apply {
+        unitOnSuccess {
+            if (networkStateDao.getNetworkState()?.sid?.equals(session?.id) == false)
+                networkStateDao.updateNetworkState()
+        }
+    } }
+    private suspend fun truncateSession() {
+        runtimeDao.truncateSessions()
+        networkStateDao.truncateNetworkStates()
+        networkCapabilitiesDao.truncateNetworkCapabilities()
     }
 
     private fun reactToNetworkCapabilitiesChangedAsync(network: Network, networkCapabilities: NetworkCapabilities) =
@@ -93,7 +66,6 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
         updateNetworkCapabilities(networkCapabilities)
         Log.i(INET_TAG, "Network capabilities have changed.")
     }
-
     private suspend fun updateNetworkCapabilities(networkCapabilities: NetworkCapabilities) {
         networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities)
         Log.i(DB_TAG, "Updated network capabilities.")
@@ -107,10 +79,31 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
         updateNetworkState()
         Log.i(INET_TAG, "Internet availability has changed.")
     }
-
     private suspend fun updateNetworkState() {
         networkStateDao.updateNetworkState()
         Log.i(DB_TAG, "Updated network state.")
+    }
+
+    fun runInternetAvailabilityTest(): Boolean {
+        Log.i(INET_TAG, "Trying to send out http request for internet availability...")
+        return requireHttpClientForInternetAvailabilityTest()
+            .newCall(requireHttpRequestForInternetAvailabilityTest())
+            .execute().let { response ->
+                response.isSuccessful.also {
+                    response.close()
+                    Log.i(INET_TAG, "Received response for internet availability.")
+                }
+            }
+    }
+    private fun requireHttpClientForInternetAvailabilityTest(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .retryOnConnectionFailure(false)
+            .build()
+    }
+    private fun requireHttpRequestForInternetAvailabilityTest(): Request {
+        return Request.Builder()
+            .url("https://httpbin.org/delay/1")
+            .build()
     }
 
     override var seq: MutableList<Pair<() -> LiveData<Any?>?, ((Any?) -> Any?)?>> = mutableListOf()
