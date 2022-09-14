@@ -109,7 +109,7 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
     inline fun runner(block: () -> Unit) {
         try { block() }
         catch (ex: AutoResetException) {
-            captureBefore { reset(step) }
+            resetOnResume()
         }
         catch (ex: CancellationException) {
             exception(ex)
@@ -158,6 +158,8 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
         hasError = false
         isCancelled = false
     }
+    private var resetOnResume = false
+    fun resetOnResume() { resetOnResume = true }
     fun inactive() { isActive = false }
     private fun exit() {
         isActive = false
@@ -172,11 +174,15 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
             clear()
             super.start()
         }
-    override fun resume() =
+    override fun resume(index: Int) =
         if (isActive) true
         else {
             isActive = true
-            super.resume()
+            if (resetOnResume) {
+                reset()
+                resetOnResume = false
+            }
+            super.resume(index)
         }
     override fun retry() =
         if (isActive) true

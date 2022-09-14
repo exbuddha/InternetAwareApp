@@ -85,7 +85,10 @@ interface LiveDataRunner<T> : Observer<T> {
         return advance()
     }
 
-    fun resume() = advance()
+    fun resume(index: Int = ln): Boolean {
+        ln = index
+        return advance()
+    }
 
     fun retry(): Boolean {
         ln -= 1
@@ -147,7 +150,7 @@ suspend inline fun <T> LiveDataScope<T?>.resetOnNoEmit(block: LiveDataScope<T?>.
         throw AutoResetException("Auto-reset: nothing or null was emitted.")
 }
 
-class AutoResetException(msg: String, cause: Throwable? = null) : RuntimeException(msg, cause)
+class AutoResetException(msg: String? = null, cause: Throwable? = null) : RuntimeException(msg, cause)
 
 inline fun <reified T> LiveDataRunner<Any?>.nonNullOrRepeat(t: Any?, block: (T) -> Any?) {
     if (t !== null)
