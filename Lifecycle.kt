@@ -7,6 +7,7 @@ interface LiveDataRunner<T> : Observer<T> {
     var seq: MutableList<Pair<() -> LiveData<T>?, ((T?) -> Any?)?>>
     var ln: Int
     var step: LiveData<T>?
+    var lastCapture: Any?
 
     fun attach(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
         seq.add(step)
@@ -61,6 +62,7 @@ interface LiveDataRunner<T> : Observer<T> {
 
     fun start(): Boolean {
         ln = -1
+        lastCapture = null
         return advance()
     }
 
@@ -77,30 +79,29 @@ interface LiveDataRunner<T> : Observer<T> {
             if (step?.observeForever(this) === Unit)
                 return true
             else
-                seq[ln].second?.invoke(null)
+                lastCapture = seq[ln].second?.invoke(null)
         }
         end()
         return false
     }
 
-    fun end() {}
-    fun exit() = end()
-
     fun capture(t: T) {
-        seq[ln].second?.invoke(t)
+        lastCapture = seq[ln].second?.invoke(t)
         reset()
     }
 
-    fun reset() {
+    fun reset(step: LiveData<T>? = this.step) {
         step?.removeObserver(this)
     }
 
     fun unload() {
         if (ln > 0) {
             seq = MutableList(seq.size - ln) { seq[it + ln] }
-            ln = 0
+            ln = -1
         }
     }
+
+    fun end() {}
 
     override fun onChanged(t: T) {
         capture(t)
@@ -111,25 +112,30 @@ interface LiveDataRunner<T> : Observer<T> {
 suspend inline fun <T> LiveDataScope<T?>.nullOnError(block: LiveDataScope<T?>.() -> Any?) {
     try { block() }
     catch (ex: Throwable) {
-        app.ex = ex
-        emit(null)
+        if (ex !is CancellationException)
+            emit(null)
+        throw ex
     }
+    autoResetOnNoEmit()
 }
 suspend inline fun LiveDataScope<Any?>.unitOnSuccess(block: LiveDataScope<Any?>.() -> Any?) {
-    try {
-        block()
-        emit(Unit)
-    } catch (ex: Throwable) {
-        app.ex = ex
-        emit(null)
-    }
+    block()
+    emit(Unit)
+    autoResetOnNoEmit()
 }
+suspend fun <T> LiveDataScope<T?>.autoResetOnNoEmit() {
+    yield()
+    if (latestValue === null)
+        throw AutoResetException("Auto-reset: nothing or null was emitted.")
+}
+
+class AutoResetException(msg: String, cause: Throwable? = null) : RuntimeException(msg, cause)
 
 inline fun <reified T> LiveDataRunner<Any?>.nonNullOrRepeat(t: Any?, block: (T) -> Any?) {
     if (t !== null)
         block(t as T)
     else
-        ln =- 1
+        ln -= 1
 }
 inline fun LiveDataRunner<Any?>.unitOrSkip(t: Any?, block: () -> Any?) {
     if (t === Unit) block()

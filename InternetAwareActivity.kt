@@ -11,6 +11,8 @@ abstract class InternetAwareActivity : AppCompatActivity() {
         if (enableInternetAvailabilityCallback)
             registerInternetAvailabilityCallback()
         app {
+            if (hasError)
+                Log.i(SESSION_TAG, "The runner has encountered an error: ${ex?.message}")
             unload()
             capture { Log.i(SESSION_TAG, "Session id = ${session!!.id}") }
             resume()

@@ -32,25 +32,25 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
     }
 
     private suspend fun newSession(scope: LiveDataScope<Any?>) { scope.apply {
-        nullOnError {
+        runner { nullOnError {
             if (latestValue === null) {
                 runtimeDao.newSession()
                 emit(runtimeDao.getSession())
             }
-        }
+        } }
         trySafely { truncateSession() }
     } }
     private suspend fun initNetworkCapabilities(scope: LiveDataScope<Any?>) { scope.apply {
-        unitOnSuccess {
+        runner { forceResetOnError { unitOnSuccess {
             if (networkCapabilitiesDao.getNetworkCapabilities()?.sid?.equals(session?.id) == false)
                 networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities!!)
-        }
+        } } }
     } }
     private suspend fun initNetworkState(scope: LiveDataScope<Any?>) { scope.apply {
-        unitOnSuccess {
+        runner { forceResetOnError { unitOnSuccess {
             if (networkStateDao.getNetworkState()?.sid?.equals(session?.id) == false)
                 networkStateDao.updateNetworkState()
-        }
+        } } }
     } }
     private suspend fun truncateSession() {
         runtimeDao.truncateSessions()
@@ -106,19 +106,70 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
             .build()
     }
 
-    override var seq: MutableList<Pair<() -> LiveData<Any?>?, ((Any?) -> Any?)?>> = mutableListOf()
-    override var ln = -1
-    override var step: LiveData<Any?>? = null
-    var ex: Throwable? = null
+    inline fun runner(block: () -> Unit) {
+        try { block() }
+        catch (ex: AutoResetException) {
+            captureImmediately { reset(step) }
+        }
+        catch (ex: CancellationException) {
+            exception(ex)
+            interrupt()
+            throw ex
+        }
+        catch (ex: Throwable) {
+            exception(ex)
+            error()
+        }
+    }
+    inline fun forceResetOnError(block: () -> Unit) {
+        try { block() }
+        catch (ex: AutoResetException) {
+            throw ex
+        }
+        catch (ex: CancellationException) {
+            throw ex
+        }
+        catch (ex: Throwable) {
+            exception(ex)
+            error()
+            throw AutoResetException("Auto-reset: error was emitted.", ex)
+        }
+    }
+
     var isActive = false
         private set
         get() = field || isObserving
     var isObserving = false
         private set
+    var isCompleted = false
+        private set
+        get() = field || !(isActive || isCancelled)
+    var isCancelled = false
+        private set
+    var hasError = false
+        private set
+    var ex: Throwable? = null
+        private set
+    fun interrupt() { isCancelled = true }
+    fun error() { hasError = true }
+    fun exception(ex: Throwable) { this.ex = ex }
+    fun clear() {
+        ex = null
+        hasError = false
+        isCancelled = false
+    }
+    fun inactive() { isActive = false }
+    private fun exit() {
+        isActive = false
+        error()
+    }
     override fun start() =
         if (isActive) true
         else {
             isActive = true
+            isCompleted = false
+            isObserving = false
+            clear()
             super.start()
         }
     override fun resume() =
@@ -133,22 +184,34 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
             isActive = true
             super.retry()
         }
-    override fun advance() = (try {
-            super.advance()
-        } catch (_: Throwable) {
+    override fun advance() =
+        try { super.advance() }
+        catch (ex: Throwable) {
+            exception(ex)
             exit()
             false
-        }).also { isObserving = it }
-    override fun end() { isActive = false }
-    override fun reset() {
-        super.reset()
+        }.also { isObserving = it }
+    override fun end() {
+        super.end()
+        isActive = false
+        isCompleted = true
+    }
+    override fun reset(step: LiveData<Any?>?) {
+        super.reset(step)
         isObserving = false
     }
     override fun unload() { if (!isActive) super.unload() }
     override fun onChanged(t: Any?) {
         try { super.onChanged(t) }
-        catch (_: Throwable) { exit() }
+        catch (ex: Throwable) {
+            exception(ex)
+            exit()
+        }
     }
+    override var seq: MutableList<Pair<() -> LiveData<Any?>?, ((Any?) -> Any?)?>> = mutableListOf()
+    override var ln = -1
+    override var step: LiveData<Any?>? = null
+    override var lastCapture: Any? = null
 
     companion object {
         const val INET_TAG = "INTERNET"
