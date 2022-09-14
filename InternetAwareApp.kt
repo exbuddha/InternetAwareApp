@@ -41,13 +41,13 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
         trySafely { truncateSession() }
     } }
     private suspend fun initNetworkCapabilities(scope: LiveDataScope<Any?>) { scope.apply {
-        runner { forceResetOnError { unitOnSuccess {
+        runner { resetOnError { unitOnSuccess {
             if (networkCapabilitiesDao.getNetworkCapabilities()?.sid?.equals(session?.id) == false)
                 networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities!!)
         } } }
     } }
     private suspend fun initNetworkState(scope: LiveDataScope<Any?>) { scope.apply {
-        runner { forceResetOnError { unitOnSuccess {
+        runner { resetOnError { unitOnSuccess {
             if (networkStateDao.getNetworkState()?.sid?.equals(session?.id) == false)
                 networkStateDao.updateNetworkState()
         } } }
@@ -121,7 +121,7 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
             error()
         }
     }
-    inline fun forceResetOnError(block: () -> Unit) {
+    inline fun resetOnError(block: () -> Unit) {
         try { block() }
         catch (ex: AutoResetException) {
             throw ex
