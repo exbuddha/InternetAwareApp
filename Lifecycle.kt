@@ -64,7 +64,9 @@ interface LiveDataRunner<T> : Observer<T> {
         return advance()
     }
 
-    fun resume(): Boolean {
+    fun resume() = advance()
+
+    fun retry(): Boolean {
         ln -= 1
         return advance()
     }
@@ -92,8 +94,8 @@ interface LiveDataRunner<T> : Observer<T> {
         step?.removeObserver(this)
     }
 
-    fun retry() {
-        ln =- 1
+    fun repeat() {
+        ln -= 1
         reset()
     }
 
@@ -127,11 +129,11 @@ suspend inline fun LiveDataScope<Any?>.unitOnSuccess(block: LiveDataScope<Any?>.
     }
 }
 
-inline fun <reified T> LiveDataRunner<Any?>.nonNullOrRetry(t: Any?, block: (T) -> Any?) {
+inline fun <reified T> LiveDataRunner<Any?>.nonNullOrRepeat(t: Any?, block: (T) -> Any?) {
     if (t !== null)
         block(t as T)
     else
-        retry()
+        repeat()
 }
 inline fun LiveDataRunner<Any?>.unitOrReset(t: Any?, block: () -> Any?) {
     if (t === Unit)

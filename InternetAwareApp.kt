@@ -11,7 +11,7 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
         reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedAsync
         reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedAsync
         io(::newSession) {
-            nonNullOrRetry<AppRuntimeSessionEntity>(it) {
+            nonNullOrRepeat<AppRuntimeSessionEntity>(it) {
                 session = it
                 reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedSync
                 reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedSync
@@ -126,6 +126,12 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
         else {
             isActive = true
             super.resume()
+        }
+    override fun retry() =
+        if (isActive) true
+        else {
+            isActive = true
+            super.retry()
         }
     override fun advance() = super.advance().also { isObserving = it }
     override fun end() { isActive = false }
