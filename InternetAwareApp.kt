@@ -109,12 +109,12 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
     override var seq: MutableList<Pair<() -> LiveData<Any?>?, ((Any?) -> Any?)?>> = mutableListOf()
     override var ln = -1
     override var step: LiveData<Any?>? = null
+    var ex: Throwable? = null
     var isActive = false
         private set
         get() = field || isObserving
     var isObserving = false
         private set
-    var ex: Throwable? = null
     override fun start() =
         if (isActive) true
         else {
@@ -133,7 +133,12 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
             isActive = true
             super.retry()
         }
-    override fun advance() = super.advance().also { isObserving = it }
+    override fun advance() = (try {
+        super.advance()
+    } catch (_: Throwable) {
+        exit()
+        false
+    }).also { isObserving = it }
     override fun end() { isActive = false }
     override fun reset() {
         super.reset()
@@ -142,7 +147,7 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
     override fun unload() { if (!isActive) super.unload() }
     override fun onChanged(t: Any?) {
         try { super.onChanged(t) }
-        catch (_: Throwable) { isActive = false }
+        catch (_: Throwable) { exit() }
     }
 
     companion object {

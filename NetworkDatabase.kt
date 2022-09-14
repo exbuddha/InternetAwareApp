@@ -1,7 +1,7 @@
 @Database(version = DbVersion, exportSchema = false, entities = [
-    NetworkStateEntity::class,
-    NetworkCapabilitiesEntity::class, ])
+    NetworkCapabilitiesEntity::class,
+    NetworkStateEntity::class, ])
 abstract class NetworkDatabase : RoomDatabase() {
-    abstract fun networkStateDao(): NetworkStateDao
     abstract fun networkCapabilitiesDao(): NetworkCapabilitiesDao
+    abstract fun networkStateDao(): NetworkStateDao
 }
