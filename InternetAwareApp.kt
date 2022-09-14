@@ -32,12 +32,12 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
     }
 
     private suspend fun newSession(scope: LiveDataScope<Any?>) { scope.apply {
-        runner { nullOnError {
+        runner { resetOnNoEmit { nullOnError {
             if (latestValue === null) {
                 runtimeDao.newSession()
                 emit(runtimeDao.getSession())
             }
-        } }
+        } } }
         trySafely { truncateSession() }
     } }
     private suspend fun initNetworkCapabilities(scope: LiveDataScope<Any?>) { scope.apply {

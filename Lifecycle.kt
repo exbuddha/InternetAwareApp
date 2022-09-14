@@ -135,14 +135,13 @@ suspend inline fun <T> LiveDataScope<T?>.nullOnError(block: LiveDataScope<T?>.()
             emit(null)
         throw ex
     }
-    autoResetOnNoEmit()
 }
 suspend inline fun LiveDataScope<Any?>.unitOnSuccess(block: LiveDataScope<Any?>.() -> Any?) {
     block()
     emit(Unit)
-    autoResetOnNoEmit()
 }
-suspend fun <T> LiveDataScope<T?>.autoResetOnNoEmit() {
+suspend inline fun <T> LiveDataScope<T?>.resetOnNoEmit(block: LiveDataScope<T?>.() -> Unit) {
+    block()
     yield()
     if (latestValue === null)
         throw AutoResetException("Auto-reset: nothing or null was emitted.")
