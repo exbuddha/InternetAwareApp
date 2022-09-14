@@ -109,7 +109,7 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
     inline fun runner(block: () -> Unit) {
         try { block() }
         catch (ex: AutoResetException) {
-            captureImmediately { reset(step) }
+            captureBefore { reset(step) }
         }
         catch (ex: CancellationException) {
             exception(ex)
