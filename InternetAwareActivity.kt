@@ -38,14 +38,12 @@ abstract class InternetAwareActivity : AppCompatActivity() {
             detectInternetAvailabilityJob = lifecycleScope.launch(Dispatchers.IO) {
                 while (isActive) {
                     if (repeatInternetAvailabilityTest && isInternetAvailabilityTimeIntervalExceeded) {
-                        trySafely {
+                        internetAvailabilityLiveData?.postValue(trySafely {
                             isConnected && runInternetAvailabilityTest().also { isSuccessful ->
                                 if (isSuccessful)
                                     lastInternetAvailabilityTestTime = now()
                             }
-                        }.also {
-                            internetAvailabilityLiveData?.postValue(it)
-                        }
+                        })
                     }
                     delay(testInternetAvailabilityDelay)
                 }
