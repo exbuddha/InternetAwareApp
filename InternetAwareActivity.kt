@@ -81,6 +81,10 @@ abstract class InternetAwareActivity : AppCompatActivity() {
                 restartInternetAvailabilityCallback()
                 super.observe(owner, observer)
             }
+            override fun removeObserver(observer: Observer<in Boolean?>) {
+                stopInternetAvailabilityCallback()
+                super.removeObserver(observer)
+            }
             override fun postValue(value: Boolean?) {
                 if (value != this.value) super.postValue(value)
             }
