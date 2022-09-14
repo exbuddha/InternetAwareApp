@@ -134,11 +134,11 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
             super.retry()
         }
     override fun advance() = (try {
-        super.advance()
-    } catch (_: Throwable) {
-        exit()
-        false
-    }).also { isObserving = it }
+            super.advance()
+        } catch (_: Throwable) {
+            exit()
+            false
+        }).also { isObserving = it }
     override fun end() { isActive = false }
     override fun reset() {
         super.reset()
