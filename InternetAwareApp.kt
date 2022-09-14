@@ -19,12 +19,12 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
             }
         }
         io(::initNetworkCapabilities) {
-            unitOrReset(it) {
+            unitOrSkip(it) {
                 Log.i(SESSION_TAG, "Network capabilities initialized.")
             }
         }
         io(::initNetworkState) {
-            unitOrReset(it) {
+            unitOrSkip(it) {
                 Log.i(SESSION_TAG, "Network state initialized.")
             }
         }

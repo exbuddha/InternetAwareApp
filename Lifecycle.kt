@@ -94,11 +94,6 @@ interface LiveDataRunner<T> : Observer<T> {
         step?.removeObserver(this)
     }
 
-    fun repeat() {
-        ln -= 1
-        reset()
-    }
-
     fun unload() {
         if (ln > 0) {
             seq = MutableList(seq.size - ln) { seq[it + ln] }
@@ -133,11 +128,8 @@ inline fun <reified T> LiveDataRunner<Any?>.nonNullOrRepeat(t: Any?, block: (T) 
     if (t !== null)
         block(t as T)
     else
-        repeat()
+        ln =- 1
 }
-inline fun LiveDataRunner<Any?>.unitOrReset(t: Any?, block: () -> Any?) {
-    if (t === Unit)
-        block()
-    else
-        reset()
+inline fun LiveDataRunner<Any?>.unitOrSkip(t: Any?, block: () -> Any?) {
+    if (t === Unit) block()
 }
