@@ -154,11 +154,13 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
     fun error() { hasError = true }
     fun exception(ex: Throwable) { this.ex = ex }
     fun clear() {
+        resolve = null
         ex = null
         hasError = false
         isCancelled = false
     }
     var resetOnResume = false
+    var resolve: ((Throwable, Any?) -> Boolean)? = null
     fun inactive() { isActive = false }
     private fun exit() {
         isActive = false
@@ -214,10 +216,13 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
     override fun onChanged(t: Any?) {
         try { super.onChanged(t) }
         catch (ex: Throwable) {
-            exception(ex)
-            exit()
+            if (resolve(ex)) {
+                exception(ex)
+                exit()
+            }
         }
     }
+    private fun resolve(ex: Throwable, t: Any? = null) = resolve?.invoke(ex, t) ?: true
     override var seq: MutableList<Pair<() -> LiveData<Any?>?, ((Any?) -> Any?)?>> = mutableListOf()
     override var ln = -1
     override var step: LiveData<Any?>? = null
