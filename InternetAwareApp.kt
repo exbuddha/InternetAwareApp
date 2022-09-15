@@ -223,13 +223,13 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
     override fun onChanged(t: Any?) {
         try { super.onChanged(t) }
         catch (ex: Throwable) {
-            if (resolve(ex)) {
+            if (isUnresolved(ex)) {
                 exception(ex)
                 exit()
             }
         }
     }
-    private fun resolve(ex: Throwable, t: Any? = null) = resolve?.invoke(ex, t) ?: true
+    private fun isUnresolved(ex: Throwable, t: Any? = null) = resolve?.invoke(ex, t) ?: true
     override var seq: MutableList<Pair<() -> LiveData<Any?>?, ((Any?) -> Any?)?>> = mutableListOf()
     override var ln = -1
     override var step: LiveData<Any?>? = null
