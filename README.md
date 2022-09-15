@@ -8,7 +8,7 @@ callback, and the other is from probing the remote server connection. There is a
 
 One challenge that the code solves is to postpone work to a later time until a session id is acquired from the database.
 In order to achieve this while keeping the design restriction to never block the main thread in mind, a runner
-is introduced that can schedule code to run in a context concurrent to the application in a few simple steps:
+is introduced that can schedule code to run in a context concurrent to the application in a few easy steps:
 
 1. Declare the async work as a function accepting a live data scope that will be used in a background context:
   
