@@ -41,11 +41,8 @@ interface LiveDataRunner<T> : Observer<T> {
     fun unconfined(index: Int, step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
         attach(index, Dispatchers.Unconfined, step, capture)
 
-    fun attachBefore(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
-        var ln = ln - 1
-        if (ln < 0) ln = 0
-        attach(ln, step)
-    }
+    fun attachBefore(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
+        attach(if (ln < 0) 0 else ln, step)
     fun attachBefore(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) {
         fun async() = liveData(block = step)
         attachBefore(Pair(::async, capture))
