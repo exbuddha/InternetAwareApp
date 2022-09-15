@@ -197,8 +197,13 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
             super.retry()
         }
     override fun advance() =
-        try { super.advance() }
-        catch (ex: Throwable) {
+        try {
+            if (resetOnResume) {
+                reset()
+                resetOnResume = false
+            }
+            super.advance()
+        } catch (ex: Throwable) {
             exception(ex)
             exit()
             false
