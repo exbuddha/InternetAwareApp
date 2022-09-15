@@ -128,7 +128,7 @@ interface LiveDataRunner<T> : Observer<T> {
     }
 }
 
-suspend inline fun <T> LiveDataScope<T?>.nullOnError(block: LiveDataScope<T?>.() -> Any?) {
+suspend inline fun <T> LiveDataScope<T?>.nullOnError(block: LiveDataScope<T?>.() -> Unit) {
     try { block() }
     catch (ex: Throwable) {
         if (ex !is CancellationException)
@@ -136,7 +136,7 @@ suspend inline fun <T> LiveDataScope<T?>.nullOnError(block: LiveDataScope<T?>.()
         throw ex
     }
 }
-suspend inline fun LiveDataScope<Any?>.unitOnSuccess(block: LiveDataScope<Any?>.() -> Any?) {
+suspend inline fun LiveDataScope<Any?>.unitOnSuccess(block: LiveDataScope<Any?>.() -> Unit) {
     block()
     emit(Unit)
 }
@@ -155,6 +155,6 @@ inline fun <reified T> LiveDataRunner<Any?>.nonNullOrRepeat(t: Any?, block: (T) 
     else
         ln -= 1
 }
-inline fun LiveDataRunner<Any?>.unitOrSkip(t: Any?, block: () -> Any?) {
-    if (t === Unit) block()
+inline fun LiveDataRunner<Any?>.unitOrSkip(t: Any?, block: (Any?) -> Any?) {
+    if (t == Unit) block(t)
 }
