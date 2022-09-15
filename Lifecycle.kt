@@ -136,7 +136,7 @@ suspend inline fun <T> LiveDataScope<T?>.nullOnError(block: LiveDataScope<T?>.()
         throw ex
     }
 }
-suspend inline fun <T> LiveDataScope<Any?>.unitOnError(block: LiveDataScope<Any?>.() -> Unit) {
+suspend inline fun LiveDataScope<Any?>.unitOnError(block: LiveDataScope<Any?>.() -> Unit) {
     try { block() }
     catch (ex: Throwable) {
         if (ex !is CancellationException)

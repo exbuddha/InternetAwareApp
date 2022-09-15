@@ -32,7 +32,7 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
     }
 
     private suspend fun newSession(scope: LiveDataScope<Any?>) { scope.apply {
-        runner { resetOnNoEmit { unitOnError<AppRuntimeSessionEntity> {
+        runner { resetOnNoEmit { unitOnError {
             if (latestValue === null) {
                 runtimeDao.newSession()
                 emit(runtimeDao.getSession())
