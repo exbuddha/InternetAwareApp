@@ -11,7 +11,7 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
         reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedAsync
         reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedAsync
         io(::newSession) {
-            nonNullOrRepeat<AppRuntimeSessionEntity>(it) {
+            nonUnitOrRepeat<AppRuntimeSessionEntity>(it) {
                 session = it
                 reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedSync
                 reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedSync
@@ -32,7 +32,7 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
     }
 
     private suspend fun newSession(scope: LiveDataScope<Any?>) { scope.apply {
-        runner { resetOnNoEmit { nullOnError {
+        runner { resetOnNoEmit { unitOnError<AppRuntimeSessionEntity> {
             if (latestValue === null) {
                 runtimeDao.newSession()
                 emit(runtimeDao.getSession())

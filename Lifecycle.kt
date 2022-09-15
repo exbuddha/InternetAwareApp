@@ -136,6 +136,14 @@ suspend inline fun <T> LiveDataScope<T?>.nullOnError(block: LiveDataScope<T?>.()
         throw ex
     }
 }
+suspend inline fun <T> LiveDataScope<Any?>.unitOnError(block: LiveDataScope<Any?>.() -> Unit) {
+    try { block() }
+    catch (ex: Throwable) {
+        if (ex !is CancellationException)
+            emit(Unit)
+        throw ex
+    }
+}
 suspend inline fun LiveDataScope<Any?>.unitOnSuccess(block: LiveDataScope<Any?>.() -> Unit) {
     block()
     emit(Unit)
@@ -150,7 +158,13 @@ suspend inline fun <T> LiveDataScope<T?>.resetOnNoEmit(block: LiveDataScope<T?>.
 class AutoResetException(msg: String? = null, cause: Throwable? = null) : RuntimeException(msg, cause)
 
 inline fun <reified T> LiveDataRunner<Any?>.nonNullOrRepeat(t: Any?, block: (T) -> Any?) {
-    if (t !== null)
+    if (t != null)
+        block(t as T)
+    else
+        ln -= 1
+}
+inline fun <reified T> LiveDataRunner<Any?>.nonUnitOrRepeat(t: Any?, block: (T) -> Any?) {
+    if (t != Unit)
         block(t as T)
     else
         ln -= 1
