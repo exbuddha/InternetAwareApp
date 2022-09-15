@@ -214,8 +214,10 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
         isCompleted = true
     }
     override fun reset(step: LiveData<Any?>?) {
-        super.reset(step)
-        isObserving = false
+        if (!resetOnResume) {
+            super.reset(step)
+            isObserving = false
+        }
     }
     override fun unload() { if (!isActive) super.unload() }
     override fun onChanged(t: Any?) {
