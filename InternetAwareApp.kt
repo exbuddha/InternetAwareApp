@@ -18,6 +18,7 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
                 Log.i(SESSION_TAG, "New session created.")
             }
         }
+        start()
         io(::initNetworkCapabilities) {
             unitOrSkip(it) {
                 Log.i(SESSION_TAG, "Network capabilities initialized.")
@@ -28,7 +29,6 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
                 Log.i(SESSION_TAG, "Network state initialized.")
             }
         }
-        start()
     }
 
     private suspend fun newSession(scope: LiveDataScope<Any?>) { scope.apply {
