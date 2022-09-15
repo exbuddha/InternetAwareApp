@@ -6,7 +6,7 @@ The delay times can be adjusted to control intervals for waking up and for testi
 two separate network-related sources of information. One is provided by the system's default network capabilities
 callback, and the other is from probing the remote server connection. There is a hard limit of 3 seconds for running the test.
 
-One challenge that the code neatly solves is to postpone work to a later time until a session id is acquired from the database.
+One challenge that the code solves is to postpone work to a later time until a session id is acquired from the database.
 In order to achieve this while keeping the design restriction to never block the main thread in mind, a runner
 is introduced that can schedule code to run in a context concurrent to the application in a few simple steps:
 
