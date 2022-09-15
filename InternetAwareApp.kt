@@ -172,6 +172,7 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
             isCompleted = false
             isObserving = false
             clear()
+            resetOnResume = false
             super.start()
         }
     override fun resume(index: Int) =
