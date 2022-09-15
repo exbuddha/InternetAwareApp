@@ -189,6 +189,10 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
         if (isActive) true
         else {
             isActive = true
+            if (resetOnResume) {
+                reset()
+                resetOnResume = false
+            }
             super.retry()
         }
     override fun advance() =
