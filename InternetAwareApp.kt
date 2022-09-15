@@ -229,7 +229,7 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
             }
         }
     }
-    private fun isUnresolved(ex: Throwable, t: Any? = null) = resolve?.invoke(ex, t) ?: true
+    private fun isUnresolved(ex: Throwable, t: Any? = null) = resolve?.invoke(ex, t) == false
     override var seq: MutableList<Pair<() -> LiveData<Any?>?, ((Any?) -> Any?)?>> = mutableListOf()
     override var ln = -1
     override var step: LiveData<Any?>? = null
