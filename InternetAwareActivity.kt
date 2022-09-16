@@ -11,14 +11,13 @@ abstract class InternetAwareActivity : AppCompatActivity() {
         if (enableInternetAvailabilityCallback)
             registerInternetAvailabilityCallback()
         app {
-            if (hasError)
+            if (hasError) {
                 Log.i(SESSION_TAG, "The runner has encountered an error: ${ex?.message}")
+                clearError()
+                inactive()
+            }
+            resume()
             unload()
-            captureOnce { Log.i(SESSION_TAG, "Session id = ${session!!.id}") }
-            if (isCompleted)
-                start()
-            else
-                resume()
         }
     }
 
@@ -28,6 +27,7 @@ abstract class InternetAwareActivity : AppCompatActivity() {
         internetAvailabilityLiveData = null
         clearNetworkCapabilitiesObjects()
         super.onStop()
+        app.unload()
     }
 
     fun registerInternetAvailabilityCallback() {

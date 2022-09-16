@@ -137,6 +137,7 @@ interface LiveDataRunner<T> : Observer<T> {
     }
 
     fun advance(): Boolean {
+        if (ln < -1) ln = -1
         while (++ln < seq.size) {
             step = seq[ln].first.invoke()
             if (step?.observeForever(this) === Unit)
@@ -148,7 +149,7 @@ interface LiveDataRunner<T> : Observer<T> {
         return false
     }
 
-    fun capture(t: T) {
+    fun block(t: T) {
         lastCapture = seq[ln].second?.invoke(t)
         reset()
     }
@@ -176,7 +177,7 @@ interface LiveDataRunner<T> : Observer<T> {
     fun end() {}
 
     override fun onChanged(t: T) {
-        capture(t)
+        block(t)
         advance()
     }
 
@@ -212,47 +213,11 @@ private fun <T> Pair<() -> LiveData<T>?, ((T?) -> Any?)?>.isSameStep(step: Pair<
 private fun <T> Pair<() -> LiveData<T>?, ((T?) -> Any?)?>.isNotSameStep(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
     this !== step || first !== step.first || second !== step.second
 
-suspend inline fun <T> LiveDataScope<T?>.nullOnError(block: LiveDataScope<T?>.() -> Unit) {
-    try { block() }
-    catch (ex: Throwable) {
-        if (ex !is CancellationException)
-            emit(null)
-        throw ex
-    }
-}
-suspend inline fun LiveDataScope<Any?>.unitOnError(block: LiveDataScope<Any?>.() -> Unit) {
-    try { block() }
-    catch (ex: Throwable) {
-        if (ex !is CancellationException)
-            emit(Unit)
-        throw ex
-    }
-}
-suspend inline fun LiveDataScope<Any?>.unitOnSuccess(block: LiveDataScope<Any?>.() -> Unit) {
-    block()
-    emit(Unit)
-}
-suspend inline fun <T> LiveDataScope<T?>.resetOnNoEmit(block: LiveDataScope<T?>.() -> Unit) {
-    block()
-    yield()
-    if (latestValue === null)
-        throw AutoResetException("Auto-reset: nothing or null was emitted.")
-}
-
 class AutoResetException(msg: String? = null, cause: Throwable? = null) : RuntimeException(msg, cause)
 
-inline fun <reified T> LiveDataRunner<Any?>.nonNullOrRepeat(t: Any?, block: (T) -> Any?) {
-    if (t != null)
-        block(t as T)
-    else
-        ln -= 1
-}
-inline fun <reified T> LiveDataRunner<Any?>.nonUnitOrRepeat(t: Any?, block: (T) -> Any?) {
-    if (t != Unit)
-        block(t as T)
-    else
-        ln -= 1
-}
-inline fun LiveDataRunner<Any?>.unitOrSkip(t: Any?, block: (Any?) -> Any?) {
-    if (t == Unit) block(t)
+interface LiveDataInvoker : LiveDataRunner<(suspend () -> Any?)?> {
+    override fun block(t: (suspend () -> Any?)?) {
+        super.block(t)
+        if (t !== null) runBlocking { t.invoke() }
+    }
 }
