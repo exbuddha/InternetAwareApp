@@ -15,7 +15,10 @@ abstract class InternetAwareActivity : AppCompatActivity() {
                 Log.i(SESSION_TAG, "The runner has encountered an error: ${ex?.message}")
             unload()
             captureOnce { Log.i(SESSION_TAG, "Session id = ${session!!.id}") }
-            resume()
+            if (isCompleted)
+                start()
+            else
+                resume()
         }
     }
 

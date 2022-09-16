@@ -16,14 +16,6 @@ interface LiveDataRunner<T> : Observer<T> {
         if (isNotAttached(step))
             attach(step)
     }
-    fun attachOnce(index: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
-        if (isNotAttached(step))
-            seq.add(index, step)
-    }
-    fun attachOnceBefore(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
-        attachOnce(if (ln < 0) 0 else ln, step)
-    fun attachOnceAfter(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
-        attachOnce(ln + 1, step)
     fun attach(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null): () -> LiveData<T>? {
         fun async() = liveData(block = step)
         attach(Pair(::async, capture))
@@ -37,6 +29,10 @@ interface LiveDataRunner<T> : Observer<T> {
     fun attach(index: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
         seq.add(index, step)
     }
+    fun attachOnce(index: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
+        if (isNotAttached(index, step))
+            seq.add(index, step)
+    }
     fun attach(index: Int, step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null): () -> LiveData<T>? {
         fun async() = liveData(block = step)
         attach(index, Pair(::async, capture))
@@ -47,8 +43,11 @@ interface LiveDataRunner<T> : Observer<T> {
         attach(index, Pair(::async, capture))
         return ::async
     }
-    fun attachBefore(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
-        attach(if (ln < 0) 0 else ln, step)
+    fun attachBefore(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
+        ln = (if (ln > seq.size) ln else ln + 1).also { attach(before, step) }
+    }
+    fun attachOnceBefore(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
+        attachOnce(before, step)
     fun attachBefore(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null): () -> LiveData<T>? {
         fun async() = liveData(block = step)
         attachBefore(Pair(::async, capture))
@@ -60,7 +59,9 @@ interface LiveDataRunner<T> : Observer<T> {
         return ::async
     }
     fun attachAfter(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
-        attach(ln + 1, step)
+        attach(after, step)
+    fun attachOnceAfter(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
+        attachOnce(after, step)
     fun attachAfter(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null): () -> LiveData<T>? {
         fun async() = liveData(block = step)
         attachAfter(Pair(::async, capture))
@@ -91,17 +92,27 @@ interface LiveDataRunner<T> : Observer<T> {
         attachAfter(Dispatchers.Unconfined, step, capture)
 
     fun capture(block: (T?) -> Any?) = attach({ null } to block)
-    fun capture(index: Int, block: (T?) -> Any?) = attach(index, { null } to block)
     fun captureOnce(block: (T?) -> Any?) {
         if (isNotAttached(block))
             attach({ null } to block)
     }
+    fun capture(index: Int, block: (T?) -> Any?) = attach(index, { null } to block)
     fun captureOnce(index: Int, block: (T?) -> Any?) {
-        if (isNotAttached(block))
+        if (isNotAttached(index, block))
             attach(index, { null } to block)
     }
     fun captureBefore(block: (T?) -> Any?) = attachBefore({ null } to block)
+    fun captureOnceBefore(block: (T?) -> Any?) {
+        if (ln > 1 && seq[ln - 1].second !== block)
+            attachBefore({ null } to block)
+    }
     fun captureAfter(block: (T?) -> Any?) = attachAfter({ null } to block)
+    fun captureOnceAfter(block: (T?) -> Any?) {
+        (ln + 1).let {
+            if (it < seq.size && seq[it].second !== block)
+                attach(it, { null } to block)
+        }
+    }
 
     fun start(): Boolean {
         ln = -1
@@ -164,6 +175,22 @@ interface LiveDataRunner<T> : Observer<T> {
                 if (predicate(seq[i])) return false
         return true
     }
+    private fun isNotAttached(index: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
+        none(index) { it === step || (it.first === step.first && it.second === step.second) }
+    private fun isNotAttached(index: Int, block: (T?) -> Any?) =
+        none(index) { it.second === block }
+    private inline fun none(index: Int, predicate: (Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) -> Boolean): Boolean {
+        if (seq.size > 0) when {
+            index < seq.size / 2 -> seq.none(predicate)
+            else -> for (i in (seq.size - 1)..0)
+                if (predicate(seq[i])) return false
+        }
+        return true
+    }
+    private val before
+        get() = if (ln < 0) 0 else ln
+    private val after
+        get() = if (ln > seq.size) seq.size else ln + 1
 }
 
 suspend inline fun <T> LiveDataScope<T?>.nullOnError(block: LiveDataScope<T?>.() -> Unit) {
