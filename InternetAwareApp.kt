@@ -157,12 +157,12 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
     fun interrupt() { isCancelled = true }
     fun error() { hasError = true }
     fun exception(ex: Throwable) { this.ex = ex }
-    fun clear() {
+    fun clearError() {
         resolve = null
         ex = null
         hasError = false
-        isCancelled = false
     }
+    fun clearInterrupt() { isCancelled = false }
     var resetOnResume = false
     var resolve: ((Throwable, Any?) -> Boolean)? = null
     fun inactive() { isActive = false }
@@ -176,7 +176,8 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
             isActive = true
             isCompleted = false
             isObserving = false
-            clear()
+            clearError()
+            clearInterrupt()
             resetOnResume = false
             super.start()
         }
@@ -215,6 +216,7 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
             isObserving = false
         }
     }
+    override fun clear() { if (!isActive) super.clear() }
     override fun unload() { if (!isActive) super.unload() }
     override fun onChanged(t: Any?) {
         try { super.onChanged(t) }

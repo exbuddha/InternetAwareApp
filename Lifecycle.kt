@@ -157,6 +157,13 @@ interface LiveDataRunner<T> : Observer<T> {
         step?.removeObserver(this)
     }
 
+    fun clear() {
+        if (ln < 0)
+            seq.clear()
+        else
+            seq = MutableList(ln + 1) { seq[it] }
+    }
+
     fun unload() {
         if (ln > seq.size)
             seq.clear()
