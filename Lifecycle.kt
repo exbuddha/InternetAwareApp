@@ -158,7 +158,9 @@ interface LiveDataRunner<T> : Observer<T> {
     }
 
     fun unload() {
-        if (ln > 0) {
+        if (ln > seq.size)
+            seq.clear()
+        else if (ln > 0) {
             seq = MutableList(seq.size - ln) { seq[it + ln] }
             ln = -1
         }

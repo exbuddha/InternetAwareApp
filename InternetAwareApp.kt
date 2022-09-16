@@ -211,12 +211,7 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
             isObserving = false
         }
     }
-    override fun unload() {
-        if (isCompleted)
-            seq.clear()
-        else if (!isActive)
-            super.unload()
-    }
+    override fun unload() { if (!isActive) super.unload() }
     override fun onChanged(t: Any?) {
         try { super.onChanged(t) }
         catch (ex: Throwable) {
