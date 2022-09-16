@@ -1,13 +1,16 @@
 class InternetAwareApp : Application(), LiveDataRunner<Any?> {
     var startTime = now()
 
-    lateinit var reactToNetworkCapabilitiesChanged: (Network, NetworkCapabilities) -> Unit
-    lateinit var reactToInternetAvailabilityChanged: (Boolean?) -> Unit
-
     override fun onCreate() {
         super.onCreate()
         app = this
+        startSession()
+    }
 
+    lateinit var reactToNetworkCapabilitiesChanged: (Network, NetworkCapabilities) -> Unit
+    lateinit var reactToInternetAvailabilityChanged: (Boolean?) -> Unit
+
+    private fun startSession() {
         reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedAsync
         reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedAsync
         io(::newSession) {
@@ -30,7 +33,6 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
             }
         }
     }
-
     private suspend fun newSession(scope: LiveDataScope<Any?>) { scope.apply {
         runner { resetOnNoEmit { unitOnError {
             if (latestValue === null) {
@@ -58,8 +60,9 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
         networkCapabilitiesDao.truncateNetworkCapabilities()
     }
 
-    private fun reactToNetworkCapabilitiesChangedAsync(network: Network, networkCapabilities: NetworkCapabilities) =
+    private fun reactToNetworkCapabilitiesChangedAsync(network: Network, networkCapabilities: NetworkCapabilities) {
         attach({ reactToNetworkCapabilitiesChanged(network, networkCapabilities) })
+    }
     private fun reactToNetworkCapabilitiesChangedSync(network: Network, networkCapabilities: NetworkCapabilities) =
         runBlocking { reactToNetworkCapabilitiesChanged(network, networkCapabilities) }
     private suspend fun reactToNetworkCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
@@ -71,8 +74,9 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
         Log.i(DB_TAG, "Updated network capabilities.")
     }
 
-    private fun reactToInternetAvailabilityChangedAsync(state: Boolean?) =
+    private fun reactToInternetAvailabilityChangedAsync(state: Boolean?) {
         attach({ reactToInternetAvailabilityChanged() })
+    }
     private fun reactToInternetAvailabilityChangedSync(state: Boolean?) =
         runBlocking { reactToInternetAvailabilityChanged() }
     private suspend fun reactToInternetAvailabilityChanged() {
