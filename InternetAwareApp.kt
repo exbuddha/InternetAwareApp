@@ -180,20 +180,12 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
         if (isActive) true
         else {
             isActive = true
-            if (resetOnResume) {
-                reset()
-                resetOnResume = false
-            }
             super.resume(index)
         }
     override fun retry() =
         if (isActive) true
         else {
             isActive = true
-            if (resetOnResume) {
-                reset()
-                resetOnResume = false
-            }
             super.retry()
         }
     override fun advance() =
@@ -219,7 +211,12 @@ class InternetAwareApp : Application(), LiveDataRunner<Any?> {
             isObserving = false
         }
     }
-    override fun unload() { if (!isActive) super.unload() }
+    override fun unload() {
+        if (isCompleted)
+            seq.clear()
+        else if (!isActive)
+            super.unload()
+    }
     override fun onChanged(t: Any?) {
         try { super.onChanged(t) }
         catch (ex: Throwable) {
