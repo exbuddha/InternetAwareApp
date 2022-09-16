@@ -1,4 +1,4 @@
-class InternetAwareApp : Application(), LiveDataRunner<Any?> {
+class InternetAwareApp : Application(), LiveDataInvoker {
     var startTime = now()
 
     override fun onCreate() {
