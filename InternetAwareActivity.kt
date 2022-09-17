@@ -16,6 +16,13 @@ abstract class InternetAwareActivity : AppCompatActivity() {
                 clearError()
                 inactive()
             }
+            else if (resetOnResume) {
+                Log.i(SESSION_TAG, "The runner is stopped at step: $ln")
+                inactive()
+            }
+            else if (isCompleted) {
+                Log.i(SESSION_TAG, "The runner has completed.")
+            }
             resume()
             unload()
         }

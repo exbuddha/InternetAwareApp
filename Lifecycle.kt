@@ -28,6 +28,8 @@ interface LiveDataRunner<T> : Observer<T> {
     }
     fun attach(index: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
         seq.add(index, step)
+        if (index <= ln)
+            ln = if (ln > seq.size) ln else ln + 1
     }
     fun attachOnce(index: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
         if (isNotAttached(index, step))
@@ -43,9 +45,7 @@ interface LiveDataRunner<T> : Observer<T> {
         attach(index, Pair(::async, capture))
         return ::async
     }
-    fun attachBefore(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
-        ln = (if (ln > seq.size) ln else ln + 1).also { attach(before, step) }
-    }
+    fun attachBefore(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) = attach(before, step)
     fun attachOnceBefore(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
         if (ln > 1 && seq[ln - 1].isNotSameStep(step))
             attachBefore(step)
@@ -60,8 +60,7 @@ interface LiveDataRunner<T> : Observer<T> {
         attachBefore(Pair(::async, capture))
         return ::async
     }
-    fun attachAfter(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
-        attach(after, step)
+    fun attachAfter(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) = attach(after, step)
     fun attachOnceAfter(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
         (ln + 1).let {
             if (it < seq.size && seq[it].isNotSameStep(step))
