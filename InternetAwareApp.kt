@@ -14,7 +14,6 @@ class InternetAwareApp : Application(), LiveDataInvoker {
         io(::newSession)
         start()
         io(::initNetworkCapabilities)
-        io(::initNetworkState)
     }
     private suspend fun newSession(scope: LiveDataScope<(suspend () -> Any?)?>) { scope.apply {
         runner { resetOnNoEmit { repeatOnError {
@@ -37,10 +36,6 @@ class InternetAwareApp : Application(), LiveDataInvoker {
                 networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities!!)
                 emit { Log.i(SESSION_TAG, "Network capabilities initialized.") }
             }
-        } }
-    } }
-    private suspend fun initNetworkState(scope: LiveDataScope<(suspend () -> Any?)?>) { scope.apply {
-        runner { resetOnFailure {
             if (networkStateDao.getNetworkState()?.sid?.equals(session?.id) == false) {
                 networkStateDao.updateNetworkState()
                 emit { Log.i(SESSION_TAG, "Network state initialized.") }
@@ -105,55 +100,31 @@ class InternetAwareApp : Application(), LiveDataInvoker {
             .build()
     }
 
-    suspend inline fun runner(block: () -> Unit) {
-        try { block() }
-        catch (ex: AutoResetException) {
-            resetOnResume = true
-        }
-        catch (ex: CancellationException) {
-            exception(ex)
+    suspend inline fun runner(block: () -> Unit) =
+        runBlock(block, { resetOnResume = true }, {
+            exception(it)
             interrupt()
-            throw ex
-        }
-        catch (ex: Throwable) {
-            exception(ex)
+            throw it
+        }, {
+            exception(it)
             error()
-        }
-    }
+        })
     suspend inline fun resetOnError(block: () -> Unit) {
-        try { block() }
-        catch (ex: AutoResetException) {
-            throw ex
-        }
-        catch (ex: CancellationException) {
-            throw ex
-        }
-        catch (ex: Throwable) {
-            exception(ex)
-            error()
-            throw AutoResetException("Auto-reset: error was emitted.", ex)
+        autoReset(block) {
+            throwAutoResetException(it)
         }
     }
     suspend inline fun repeatOnError(block: () -> Unit) {
-        try { block() }
-        catch (ex: AutoResetException) {
-            throw ex
-        }
-        catch (ex: CancellationException) {
-            throw ex
-        }
-        catch (ex: Throwable) {
-            exception(ex)
-            error()
-            ln -= 1
-            throw AutoResetException("Auto-reset: error was emitted.", ex)
+        autoReset(block) {
+            throwAutoResetException(it)
         }
     }
     suspend inline fun <T> LiveDataScope<T?>.resetOnNoEmit(block: LiveDataScope<T?>.() -> Unit) {
-        block()
-        yield()
-        if (latestValue === null)
-            throw AutoResetException("Auto-reset: nothing or null was emitted.")
+        postBlock(block) {
+            yield()
+            if (latestValue === null)
+                throw AutoResetException("Auto-reset: nothing or null was emitted.")
+        }
     }
     suspend inline fun <T> LiveDataScope<T?>.resetOnFailure(block: () -> Unit) = resetOnNoEmit { resetOnError(block) }
     suspend inline fun <T> LiveDataScope<T?>.nullOnError(block: LiveDataScope<T?>.() -> Unit) {
@@ -173,23 +144,48 @@ class InternetAwareApp : Application(), LiveDataInvoker {
         }
     }
     suspend inline fun LiveDataScope<Any?>.unitOnSuccess(block: LiveDataScope<Any?>.() -> Unit) {
-        block()
-        emit(Unit)
+        postBlock(block) { emit(Unit) }
     }
 
-    inline fun <reified T> LiveDataRunner<Any?>.nonNullOrRepeat(t: Any?, block: (T) -> Any?) {
+    inline fun runBlock(block: () -> Unit, onAutoRest: (Throwable) -> Unit = {}, onCancel: (Throwable) -> Unit = {}, onError: (Throwable) -> Unit = {}) {
+        try { block() }
+        catch (ex: AutoResetException) {
+            onAutoRest(ex)
+        }
+        catch (ex: CancellationException) {
+            onCancel(ex)
+        }
+        catch (ex: Throwable) {
+            onError(ex)
+        }
+    }
+    inline fun autoReset(block: () -> Unit, preAutoReset: (Throwable) -> Unit) {
+        runBlock(block, { throw it }, { throw it }, {
+            preAutoReset(it)
+            throw AutoResetException("Auto-reset", it)
+        })
+    }
+    fun throwAutoResetException(ex: Throwable) {
+        throw AutoResetException("Auto-reset: error was emitted.", ex)
+    }
+    inline fun <T> LiveDataScope<T?>.postBlock(block: LiveDataScope<T?>.() -> Unit, patch: () -> Unit) {
+        block()
+        patch()
+    }
+
+    inline fun <reified T> LiveDataRunner<Any?>.nonNullOrRepeat(t: Any?, block: (T) -> Unit) {
         if (t != null)
             block(t as T)
         else
             ln -= 1
     }
-    inline fun <reified T> LiveDataRunner<Any?>.nonUnitOrRepeat(t: Any?, block: (T) -> Any?) {
+    inline fun <reified T> LiveDataRunner<Any?>.nonUnitOrRepeat(t: Any?, block: (T) -> Unit) {
         if (t != Unit)
             block(t as T)
         else
             ln -= 1
     }
-    inline fun LiveDataRunner<Any?>.unitOrSkip(t: Any?, block: (Any?) -> Any?) {
+    inline fun LiveDataRunner<Any?>.unitOrSkip(t: Any?, block: (Any?) -> Unit) {
         if (t == Unit) block(t)
     }
 
