@@ -147,10 +147,10 @@ class InternetAwareApp : Application(), LiveDataInvoker {
         postBlock(block) { emit(Unit) }
     }
 
-    inline fun runBlock(block: () -> Unit, onAutoRest: (Throwable) -> Unit = {}, onCancel: (Throwable) -> Unit = {}, onError: (Throwable) -> Unit = {}) {
+    inline fun runBlock(block: () -> Unit, onAutoReset: (Throwable) -> Unit = {}, onCancel: (Throwable) -> Unit = {}, onError: (Throwable) -> Unit = {}) {
         try { block() }
         catch (ex: AutoResetException) {
-            onAutoRest(ex)
+            onAutoReset(ex)
         }
         catch (ex: CancellationException) {
             onCancel(ex)
