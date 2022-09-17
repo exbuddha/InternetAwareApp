@@ -99,23 +99,23 @@ interface LiveDataRunner<T> : Observer<T> {
     fun capture(block: (T?) -> Any?) = attach({ null } to block)
     fun captureOnce(block: (T?) -> Any?) {
         if (isNotAttached(block))
-            attach({ null } to block)
+            capture(block)
     }
     fun capture(index: Int, block: (T?) -> Any?) = attach(index, { null } to block)
     fun captureOnce(index: Int, block: (T?) -> Any?) {
         if (isNotAttached(index, block))
-            attach(index, { null } to block)
+            capture(index, block)
     }
     fun captureBefore(block: (T?) -> Any?) = attachBefore({ null } to block)
     fun captureOnceBefore(block: (T?) -> Any?) {
         if (ln > 1 && seq[ln - 1].second !== block)
-            attachBefore({ null } to block)
+            captureBefore(block)
     }
     fun captureAfter(block: (T?) -> Any?) = attachAfter({ null } to block)
     fun captureOnceAfter(block: (T?) -> Any?) {
         (ln + 1).let {
             if (it < seq.size && seq[it].second !== block)
-                attach(it, { null } to block)
+                capture(it, block)
         }
     }
 
