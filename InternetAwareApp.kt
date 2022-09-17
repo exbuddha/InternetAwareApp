@@ -101,21 +101,25 @@ class InternetAwareApp : Application(), LiveDataInvoker {
     }
 
     suspend inline fun runner(block: () -> Unit) =
-        runBlock(block, { resetOnResume = true }, {
+        runBlock(block, {
+            resetOnResume = true
+        }, {
             exception(it)
             interrupt()
             throw it
         }, {
-            exception(it)
-            error()
+            recordError(it)
         })
     suspend inline fun resetOnError(block: () -> Unit) {
         autoReset(block) {
+            recordError(it)
             throwAutoResetException(it)
         }
     }
     suspend inline fun repeatOnError(block: () -> Unit) {
         autoReset(block) {
+            recordError(it)
+            ln =- 1
             throwAutoResetException(it)
         }
     }
@@ -164,6 +168,10 @@ class InternetAwareApp : Application(), LiveDataInvoker {
             preAutoReset(it)
             throw AutoResetException("Auto-reset", it)
         })
+    }
+    fun recordError(ex: Throwable) {
+        exception(ex)
+        error()
     }
     fun throwAutoResetException(ex: Throwable) {
         throw AutoResetException("Auto-reset: error was emitted.", ex)

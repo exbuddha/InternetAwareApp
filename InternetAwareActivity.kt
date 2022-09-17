@@ -12,7 +12,7 @@ abstract class InternetAwareActivity : AppCompatActivity() {
             registerInternetAvailabilityCallback()
         app {
             if (hasError) {
-                Log.i(SESSION_TAG, "The runner has encountered an error: ${ex?.message}")
+                Log.i(SESSION_TAG, "The runner has encountered an error at step $ln: ${ex?.message}")
                 clearError()
                 inactive()
             }
