@@ -207,11 +207,12 @@ interface LiveDataRunner<T> : Observer<T> {
         get() = if (ln < 0) 0 else ln
     private val after
         get() = if (ln > seq.size) seq.size else ln + 1
+
+    private fun <T> Pair<() -> LiveData<T>?, ((T?) -> Any?)?>.isSameStep(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
+        this === step || (first === step.first && second === step.second)
+    private fun <T> Pair<() -> LiveData<T>?, ((T?) -> Any?)?>.isNotSameStep(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
+        this !== step || first !== step.first || second !== step.second
 }
-private fun <T> Pair<() -> LiveData<T>?, ((T?) -> Any?)?>.isSameStep(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
-    this === step || (first === step.first && second === step.second)
-private fun <T> Pair<() -> LiveData<T>?, ((T?) -> Any?)?>.isNotSameStep(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
-    this !== step || first !== step.first || second !== step.second
 
 class AutoResetException(msg: String? = null, cause: Throwable? = null) : RuntimeException(msg, cause)
 

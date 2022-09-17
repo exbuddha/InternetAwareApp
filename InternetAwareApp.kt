@@ -56,8 +56,9 @@ class InternetAwareApp : Application(), LiveDataInvoker {
     private fun reactToNetworkCapabilitiesChangedAsync(network: Network, networkCapabilities: NetworkCapabilities) {
         attach({ reactToNetworkCapabilitiesChanged(network, networkCapabilities) })
     }
-    private fun reactToNetworkCapabilitiesChangedSync(network: Network, networkCapabilities: NetworkCapabilities) =
+    private fun reactToNetworkCapabilitiesChangedSync(network: Network, networkCapabilities: NetworkCapabilities) {
         runBlocking { reactToNetworkCapabilitiesChanged(network, networkCapabilities) }
+    }
     private suspend fun reactToNetworkCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
         updateNetworkCapabilities(networkCapabilities)
         Log.i(INET_TAG, "Network capabilities have changed.")
@@ -70,8 +71,9 @@ class InternetAwareApp : Application(), LiveDataInvoker {
     private fun reactToInternetAvailabilityChangedAsync(state: Boolean?) {
         attach({ reactToInternetAvailabilityChanged() })
     }
-    private fun reactToInternetAvailabilityChangedSync(state: Boolean?) =
+    private fun reactToInternetAvailabilityChangedSync(state: Boolean?) {
         runBlocking { reactToInternetAvailabilityChanged() }
+    }
     private suspend fun reactToInternetAvailabilityChanged() {
         updateNetworkState()
         Log.i(INET_TAG, "Internet availability has changed.")
@@ -275,13 +277,13 @@ class InternetAwareApp : Application(), LiveDataInvoker {
     override fun onChanged(t: (suspend () -> Any?)?) {
         try { super.onChanged(t) }
         catch (ex: Throwable) {
-            if (isUnresolved(ex)) {
+            if (isUnresolved(ex, t)) {
                 exception(ex)
                 exit()
             }
         }
     }
-    private fun isUnresolved(ex: Throwable, t: Any? = null) = resolve?.invoke(ex, t) == false
+    private fun isUnresolved(ex: Throwable, t: (suspend () -> Any?)? = null) = resolve?.invoke(ex, t) == false
     override var seq: MutableList<Pair<() -> LiveData<(suspend () -> Any?)?>?, (((suspend () -> Any?)?) -> Any?)?>> = mutableListOf()
     override var ln = -1
     override var step: LiveData<(suspend () -> Any?)?>? = null
