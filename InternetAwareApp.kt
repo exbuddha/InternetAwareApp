@@ -29,15 +29,16 @@ class InternetAwareApp : Application(), LiveDataRunner<(suspend () -> Unit)?> {
         trySafely { truncateSession() }
     } }
     private suspend fun initNetworkCapabilities(scope: LiveDataScope<(suspend () -> Unit)?>) { scope.apply {
-        runner { resetOnFailure {
+        runner { resetOnError {
             if (networkCapabilitiesDao.getNetworkCapabilities()?.sid?.equals(session!!.id) == false) {
                 networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities!!)
                 Log.i(SESSION_TAG, "Network capabilities initialized.")
             }
             if (networkStateDao.getNetworkState()?.sid?.equals(session!!.id) == false) {
-            networkStateDao.updateNetworkState()
-            Log.i(SESSION_TAG, "Network state initialized.")
-        }
+                networkStateDao.updateNetworkState()
+                Log.i(SESSION_TAG, "Network state initialized.")
+            }
+            resetOnResume = true
         } }
     } }
     private suspend fun truncateSession() {
