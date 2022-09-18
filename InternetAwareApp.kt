@@ -22,6 +22,7 @@ class InternetAwareApp : Application(), LiveDataRunner<(suspend () -> Unit)?> {
                     reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedSync
                     Log.i(SESSION_TAG, "New session created.")
                     io(::initNetworkCapabilities)
+                    inactive()
                     resume()
                 }
             }
@@ -30,6 +31,7 @@ class InternetAwareApp : Application(), LiveDataRunner<(suspend () -> Unit)?> {
     } }
     private suspend fun initNetworkCapabilities(scope: LiveDataScope<(suspend () -> Unit)?>) { scope.apply {
         runner { resetOnError {
+            isActive = true
             if (networkCapabilitiesDao.getNetworkCapabilities()?.sid?.equals(session!!.id) == false)
                 networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities!!)
             if (networkStateDao.getNetworkState()?.sid?.equals(session!!.id) == false)
