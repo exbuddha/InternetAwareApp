@@ -27,9 +27,9 @@ interface LiveDataRunner<T> : Observer<T> {
         return ::async
     }
     fun attach(index: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
-        seq.add(index, step)
         if (index <= ln)
             ln = if (ln > seq.size) ln else ln + 1
+        seq.add(index, step)
     }
     fun attachOnce(index: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
         if (isNotAttached(index, step))
@@ -184,40 +184,35 @@ interface LiveDataRunner<T> : Observer<T> {
         none { it.isSameStep(step) }
     private fun isNotAttached(block: (T?) -> Any?) =
         none { it.second === block }
-    private inline fun none(predicate: (Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) -> Boolean): Boolean {
-        if (seq.size > 0)
-            for (i in (seq.size - 1)..0)
-                if (predicate(seq[i])) return false
-        return true
-    }
     private fun isNotAttached(index: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
         none(index) { it.isSameStep(step) }
     private fun isNotAttached(index: Int, block: (T?) -> Any?) =
         none(index) { it.second === block }
-    private inline fun none(index: Int, predicate: (Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) -> Boolean): Boolean {
+    private fun <T> Pair<() -> LiveData<T>?, ((T?) -> Any?)?>.isSameStep(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
+        this === step || (first === step.first && second === step.second)
+    private fun <T> Pair<() -> LiveData<T>?, ((T?) -> Any?)?>.isNotSameStep(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
+        this !== step || first !== step.first || second != step.second
+
+    private inline fun none(predicate: (Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) -> Boolean) =
+        if (seq.size > 0)
+            fails(predicate)
+        else true
+    private inline fun none(index: Int, predicate: (Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) -> Boolean) =
         if (seq.size > 0) when {
             index < seq.size / 2 -> seq.none(predicate)
-            else -> for (i in (seq.size - 1)..0)
-                if (predicate(seq[i])) return false
+            else -> fails(predicate)
         }
+        else true
+    private inline fun fails(predicate: (Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) -> Boolean): Boolean {
+        for (i in (seq.size - 1)..0)
+            if (predicate(seq[i])) return false
         return true
     }
+
     private val before
         get() = if (ln < 0) 0 else ln
     private val after
         get() = if (ln > seq.size) seq.size else ln + 1
-
-    private fun <T> Pair<() -> LiveData<T>?, ((T?) -> Any?)?>.isSameStep(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
-        this === step || (first === step.first && second === step.second)
-    private fun <T> Pair<() -> LiveData<T>?, ((T?) -> Any?)?>.isNotSameStep(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
-        this !== step || first !== step.first || second !== step.second
 }
 
 class AutoResetException(msg: String? = null, cause: Throwable? = null) : RuntimeException(msg, cause)
-
-interface LiveDataInvoker : LiveDataRunner<(suspend () -> Any?)?> {
-    override fun block(t: (suspend () -> Any?)?) {
-        super.block(t)
-        if (t !== null) runBlocking { t.invoke() }
-    }
-}

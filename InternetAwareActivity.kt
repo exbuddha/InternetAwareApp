@@ -31,9 +31,9 @@ abstract class InternetAwareActivity : AppCompatActivity() {
     override fun onStop() {
         unregisterNetworkCapabilitiesCallback()
         unregisterInternetAvailabilityCallback()
+        super.onStop()
         internetAvailabilityLiveData = null
         clearNetworkCapabilitiesObjects()
-        super.onStop()
         app.unload()
     }
 

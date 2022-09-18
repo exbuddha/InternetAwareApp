@@ -1,45 +1,43 @@
-class InternetAwareApp : Application(), LiveDataInvoker {
+class InternetAwareApp : Application(), LiveDataRunner<(suspend () -> Unit)?> {
     var startTime = now()
 
     override fun onCreate() {
         super.onCreate()
         app = this
-        startSession()
+        io(::newSession)
+        start()
     }
 
     var reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedAsync
     var reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedAsync
 
-    private fun startSession() {
-        io(::newSession)
-        start()
-        io(::initNetworkCapabilities)
-    }
-    private suspend fun newSession(scope: LiveDataScope<(suspend () -> Any?)?>) { scope.apply {
+    private suspend fun newSession(scope: LiveDataScope<(suspend () -> Unit)?>) { scope.apply {
         runner { resetOnNoEmit { repeatOnError {
             if (session === null) {
                 runtimeDao.newSession()
                 session = runtimeDao.getSession()
                 emit {
+                    reset()
                     reactToNetworkCapabilitiesChanged = ::reactToNetworkCapabilitiesChangedSync
                     reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedSync
                     Log.i(SESSION_TAG, "New session created.")
-                    Log.i(SESSION_TAG, "Session id = ${session!!.id}")
+                    io(::initNetworkCapabilities)
+                    resume()
                 }
             }
         } } }
         trySafely { truncateSession() }
     } }
-    private suspend fun initNetworkCapabilities(scope: LiveDataScope<(suspend () -> Any?)?>) { scope.apply {
+    private suspend fun initNetworkCapabilities(scope: LiveDataScope<(suspend () -> Unit)?>) { scope.apply {
         runner { resetOnFailure {
-            if (networkCapabilitiesDao.getNetworkCapabilities()?.sid?.equals(session?.id) == false) {
+            if (networkCapabilitiesDao.getNetworkCapabilities()?.sid?.equals(session!!.id) == false) {
                 networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities!!)
-                emit { Log.i(SESSION_TAG, "Network capabilities initialized.") }
+                Log.i(SESSION_TAG, "Network capabilities initialized.")
             }
-            if (networkStateDao.getNetworkState()?.sid?.equals(session?.id) == false) {
-                networkStateDao.updateNetworkState()
-                emit { Log.i(SESSION_TAG, "Network state initialized.") }
-            }
+            if (networkStateDao.getNetworkState()?.sid?.equals(session!!.id) == false) {
+            networkStateDao.updateNetworkState()
+            Log.i(SESSION_TAG, "Network state initialized.")
+        }
         } }
     } }
     private suspend fun truncateSession() {
@@ -108,17 +106,17 @@ class InternetAwareApp : Application(), LiveDataInvoker {
             interrupt()
             throw it
         }, {
-            recordError(it)
+            error(it)
         })
     suspend inline fun resetOnError(block: () -> Unit) {
         autoReset(block) {
-            recordError(it)
+            error(it)
             throwAutoResetException(it)
         }
     }
     suspend inline fun repeatOnError(block: () -> Unit) {
         autoReset(block) {
-            recordError(it)
+            error(it)
             ln =- 1
             throwAutoResetException(it)
         }
@@ -131,26 +129,6 @@ class InternetAwareApp : Application(), LiveDataInvoker {
         }
     }
     suspend inline fun <T> LiveDataScope<T?>.resetOnFailure(block: () -> Unit) = resetOnNoEmit { resetOnError(block) }
-    suspend inline fun <T> LiveDataScope<T?>.nullOnError(block: LiveDataScope<T?>.() -> Unit) {
-        try { block() }
-        catch (ex: Throwable) {
-            if (ex !is CancellationException)
-                emit(null)
-            throw ex
-        }
-    }
-    suspend inline fun LiveDataScope<Any?>.unitOnError(block: LiveDataScope<Any?>.() -> Unit) {
-        try { block() }
-        catch (ex: Throwable) {
-            if (ex !is CancellationException)
-                emit(Unit)
-            throw ex
-        }
-    }
-    suspend inline fun LiveDataScope<Any?>.unitOnSuccess(block: LiveDataScope<Any?>.() -> Unit) {
-        postBlock(block) { emit(Unit) }
-    }
-
     inline fun runBlock(block: () -> Unit, onAutoReset: (Throwable) -> Unit = {}, onCancel: (Throwable) -> Unit = {}, onError: (Throwable) -> Unit = {}) {
         try { block() }
         catch (ex: AutoResetException) {
@@ -169,32 +147,12 @@ class InternetAwareApp : Application(), LiveDataInvoker {
             throw AutoResetException("Auto-reset", it)
         })
     }
-    fun recordError(ex: Throwable) {
-        exception(ex)
-        error()
-    }
     fun throwAutoResetException(ex: Throwable) {
         throw AutoResetException("Auto-reset: error was emitted.", ex)
     }
     inline fun <T> LiveDataScope<T?>.postBlock(block: LiveDataScope<T?>.() -> Unit, patch: () -> Unit) {
         block()
         patch()
-    }
-
-    inline fun <reified T> LiveDataRunner<Any?>.nonNullOrRepeat(t: Any?, block: (T) -> Unit) {
-        if (t != null)
-            block(t as T)
-        else
-            ln -= 1
-    }
-    inline fun <reified T> LiveDataRunner<Any?>.nonUnitOrRepeat(t: Any?, block: (T) -> Unit) {
-        if (t != Unit)
-            block(t as T)
-        else
-            ln -= 1
-    }
-    inline fun LiveDataRunner<Any?>.unitOrSkip(t: Any?, block: (Any?) -> Unit) {
-        if (t == Unit) block(t)
     }
 
     var isActive = false
@@ -213,6 +171,10 @@ class InternetAwareApp : Application(), LiveDataInvoker {
         private set
     fun interrupt() { isCancelled = true }
     fun error() { hasError = true }
+    fun error(ex: Throwable) {
+        exception(ex)
+        error()
+    }
     fun exception(ex: Throwable) { this.ex = ex }
     fun clearError() {
         resolve = null
@@ -265,12 +227,16 @@ class InternetAwareApp : Application(), LiveDataInvoker {
             exit()
             false
         }.also { isObserving = it }
+    override fun block(t: (suspend () -> Unit)?) {
+        super.block(t)
+        if (t !== null) runBlocking { t.invoke() }
+    }
     override fun end() {
         super.end()
         isActive = false
         isCompleted = true
     }
-    override fun reset(step: LiveData<(suspend () -> Any?)?>?) {
+    override fun reset(step: LiveData<(suspend () -> Unit)?>?) {
         if (!resetOnResume) {
             super.reset(step)
             isObserving = false
@@ -278,7 +244,7 @@ class InternetAwareApp : Application(), LiveDataInvoker {
     }
     override fun clear() { if (!isActive) super.clear() }
     override fun unload() { if (!isActive) super.unload() }
-    override fun onChanged(t: (suspend () -> Any?)?) {
+    override fun onChanged(t: (suspend () -> Unit)?) {
         try { super.onChanged(t) }
         catch (ex: Throwable) {
             if (isUnresolved(ex, t)) {
@@ -287,10 +253,10 @@ class InternetAwareApp : Application(), LiveDataInvoker {
             }
         }
     }
-    private fun isUnresolved(ex: Throwable, t: (suspend () -> Any?)? = null) = resolve?.invoke(ex, t) == false
-    override var seq: MutableList<Pair<() -> LiveData<(suspend () -> Any?)?>?, (((suspend () -> Any?)?) -> Any?)?>> = mutableListOf()
+    private fun isUnresolved(ex: Throwable, t: (suspend () -> Unit)? = null) = resolve?.invoke(ex, t) == false
+    override var seq: MutableList<Pair<() -> LiveData<(suspend () -> Unit)?>?, (((suspend () -> Unit)?) -> Any?)?>> = mutableListOf()
     override var ln = -1
-    override var step: LiveData<(suspend () -> Any?)?>? = null
+    override var step: LiveData<(suspend () -> Unit)?>? = null
     override var lastCapture: Any? = null
 
     companion object {
