@@ -30,14 +30,10 @@ class InternetAwareApp : Application(), LiveDataRunner<(suspend () -> Unit)?> {
     } }
     private suspend fun initNetworkCapabilities(scope: LiveDataScope<(suspend () -> Unit)?>) { scope.apply {
         runner { resetOnError {
-            if (networkCapabilitiesDao.getNetworkCapabilities()?.sid?.equals(session!!.id) == false) {
+            if (networkCapabilitiesDao.getNetworkCapabilities()?.sid?.equals(session!!.id) == false)
                 networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities!!)
-                Log.i(SESSION_TAG, "Network capabilities initialized.")
-            }
-            if (networkStateDao.getNetworkState()?.sid?.equals(session!!.id) == false) {
+            if (networkStateDao.getNetworkState()?.sid?.equals(session!!.id) == false)
                 networkStateDao.updateNetworkState()
-                Log.i(SESSION_TAG, "Network state initialized.")
-            }
             resetOnResume = true
         } }
     } }
