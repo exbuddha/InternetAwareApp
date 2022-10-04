@@ -22,6 +22,7 @@ class InternetAwareApp : Application(), LiveDataRunner<(suspend () -> Unit)?> {
                     reactToInternetAvailabilityChanged = ::reactToInternetAvailabilityChangedSync
                     Log.i(SESSION_TAG, "New session created.")
                     io(::initNetworkCapabilities)
+                    inactive()
                     resume()
                 }
             }
@@ -30,11 +31,12 @@ class InternetAwareApp : Application(), LiveDataRunner<(suspend () -> Unit)?> {
     } }
     private suspend fun initNetworkCapabilities(scope: LiveDataScope<(suspend () -> Unit)?>) { scope.apply {
         runner { resetOnError {
+            active()
             if (networkCapabilitiesDao.getNetworkCapabilities()?.sid?.equals(session!!.id) == false)
                 networkCapabilitiesDao.updateNetworkCapabilities(networkCapabilities!!)
             if (networkStateDao.getNetworkState()?.sid?.equals(session!!.id) == false)
                 networkStateDao.updateNetworkState()
-            resetOnResume = true
+            stop()
         } }
     } }
     private suspend fun truncateSession() {
@@ -181,13 +183,15 @@ class InternetAwareApp : Application(), LiveDataRunner<(suspend () -> Unit)?> {
     fun clearInterrupt() { isCancelled = false }
     var resetOnResume = false
     var resolve: ((Throwable, Any?) -> Boolean)? = null
+    fun active() { isActive = true }
     fun inactive() {
         isActive = false
         isObserving = false
     }
+    fun stop() { resetOnResume = true }
     private fun exit() {
         isActive = false
-        error()
+        hasError = true
     }
     override fun start() =
         if (isActive) true
