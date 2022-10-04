@@ -114,7 +114,7 @@ class InternetAwareApp : Application(), LiveDataRunner<(suspend () -> Unit)?> {
     suspend inline fun repeatOnError(block: () -> Unit) {
         autoReset(block) {
             error(it)
-            ln =- 1
+            ln -= 1
             throwAutoResetException(it)
         }
     }
