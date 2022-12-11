@@ -51,8 +51,8 @@ interface LiveDataRunner<T> : Observer<T> {
     fun attachOnceBefore(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
         when {
             ln > seq.size -> attach(step)
-            ln > 0 -> if(seq[ln - 1].isNotSameStep(step)) attach(ln, step)
-            ln == 0 -> if(seq[0].isNotSameStep(step)) attach(ln, step)
+            ln > 0 -> if (seq[ln - 1].isNotSameStep(step)) attach(ln, step)
+            ln == 0 -> if (seq[0].isNotSameStep(step)) attach(ln, step)
             else -> attach(step)
         }
     }
@@ -106,26 +106,40 @@ interface LiveDataRunner<T> : Observer<T> {
     fun unconfinedAfter(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
         attachAfter(Dispatchers.Unconfined, step, capture)
 
-    fun capture(block: (T?) -> Any?) = attach(nullStep to block)
+    fun capture(block: (T?) -> Any?) {
+        attach(nullStep to block)
+    }
     fun captureOnce(block: (T?) -> Any?) {
         if (isNotAttached(block))
             capture(block)
     }
-    fun capture(index: Int, block: (T?) -> Any?) = attach(index, nullStep to block)
+    fun capture(index: Int, block: (T?) -> Any?) {
+        attach(index, nullStep to block)
+    }
     fun captureOnce(index: Int, block: (T?) -> Any?) {
         if (isNotAttached(index, block))
             capture(index, block)
     }
-    fun captureBefore(block: (T?) -> Any?) = attachBefore(nullStep to block)
-    fun captureOnceBefore(block: (T?) -> Any?) {
-        if (ln > 1 && seq[ln - 1].second !== block)
-            captureBefore(block)
+    fun captureBefore(block: (T?) -> Any?) {
+        attachBefore(nullStep to block)
     }
-    fun captureAfter(block: (T?) -> Any?) = attachAfter(nullStep to block)
+    fun captureOnceBefore(block: (T?) -> Any?) {
+        when {
+            ln > seq.size -> capture(block)
+            ln > 0 -> if (seq[ln - 1].second !== block) capture(ln, block)
+            ln == 0 -> if (seq[0].second !== block) capture(ln, block)
+            else -> capture(block)
+        }
+    }
+    fun captureAfter(block: (T?) -> Any?) {
+        attachAfter(nullStep to block)
+    }
     fun captureOnceAfter(block: (T?) -> Any?) {
-        (ln + 1).let {
-            if (it < seq.size && seq[it].second !== block)
-                capture(it, block)
+        (ln + 1).let { index ->
+            when {
+                index < seq.size -> if (seq[index].second !== block) capture(index, block)
+                else -> capture(block)
+            }
         }
     }
     val nullStep: () -> LiveData<T>?
