@@ -259,6 +259,7 @@ class InternetAwareApp : Application(), LiveDataRunner<(suspend () -> Unit)?> {
     override var ln = -1
     override var step: LiveData<(suspend () -> Unit)?>? = null
     override var lastCapture: Any? = null
+    override val nullStep: () -> LiveData<(suspend () -> Unit)?>? = { null }
 
     companion object {
         const val INET_TAG = "INTERNET"
