@@ -45,10 +45,16 @@ interface LiveDataRunner<T> : Observer<T> {
         attach(index, Pair(::async, capture))
         return ::async
     }
-    fun attachBefore(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) = attach(before, step)
+    fun attachBefore(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
+        attach(before, step)
+    }
     fun attachOnceBefore(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
-        if (ln > 1 && seq[ln - 1].isNotSameStep(step))
-            attachBefore(step)
+        when {
+            ln > seq.size -> attach(step)
+            ln > 0 -> if(seq[ln - 1].isNotSameStep(step)) attach(ln, step)
+            ln == 0 -> if(seq[0].isNotSameStep(step)) attach(ln, step)
+            else -> attach(step)
+        }
     }
     fun attachBefore(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null): () -> LiveData<T>? {
         fun async() = liveData(block = step)
@@ -60,11 +66,15 @@ interface LiveDataRunner<T> : Observer<T> {
         attachBefore(Pair(::async, capture))
         return ::async
     }
-    fun attachAfter(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) = attach(after, step)
+    fun attachAfter(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
+        attach(after, step)
+    }
     fun attachOnceAfter(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
         (ln + 1).let {
             if (it < seq.size && seq[it].isNotSameStep(step))
                 attach(it, step)
+            else
+                attach(step)
         }
     }
     fun attachAfter(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null): () -> LiveData<T>? {
@@ -96,28 +106,29 @@ interface LiveDataRunner<T> : Observer<T> {
     fun unconfinedAfter(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
         attachAfter(Dispatchers.Unconfined, step, capture)
 
-    fun capture(block: (T?) -> Any?) = attach({ null } to block)
+    fun capture(block: (T?) -> Any?) = attach(nullStep to block)
     fun captureOnce(block: (T?) -> Any?) {
         if (isNotAttached(block))
             capture(block)
     }
-    fun capture(index: Int, block: (T?) -> Any?) = attach(index, { null } to block)
+    fun capture(index: Int, block: (T?) -> Any?) = attach(index, nullStep to block)
     fun captureOnce(index: Int, block: (T?) -> Any?) {
         if (isNotAttached(index, block))
             capture(index, block)
     }
-    fun captureBefore(block: (T?) -> Any?) = attachBefore({ null } to block)
+    fun captureBefore(block: (T?) -> Any?) = attachBefore(nullStep to block)
     fun captureOnceBefore(block: (T?) -> Any?) {
         if (ln > 1 && seq[ln - 1].second !== block)
             captureBefore(block)
     }
-    fun captureAfter(block: (T?) -> Any?) = attachAfter({ null } to block)
+    fun captureAfter(block: (T?) -> Any?) = attachAfter(nullStep to block)
     fun captureOnceAfter(block: (T?) -> Any?) {
         (ln + 1).let {
             if (it < seq.size && seq[it].second !== block)
                 capture(it, block)
         }
     }
+    val nullStep: () -> LiveData<T>?
 
     fun start(): Boolean {
         ln = -1
@@ -192,23 +203,21 @@ interface LiveDataRunner<T> : Observer<T> {
         this === step || (first === step.first && second === step.second)
     private fun <T> Pair<() -> LiveData<T>?, ((T?) -> Any?)?>.isNotSameStep(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
         this !== step || first !== step.first || second != step.second
-
     private inline fun none(predicate: (Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) -> Boolean) =
         if (seq.size > 0)
-            fails(predicate)
+            seq.fails(predicate)
         else true
     private inline fun none(index: Int, predicate: (Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) -> Boolean) =
         if (seq.size > 0) when {
             index < seq.size / 2 -> seq.none(predicate)
-            else -> fails(predicate)
+            else -> seq.fails(predicate)
         }
         else true
-    private inline fun fails(predicate: (Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) -> Boolean): Boolean {
-        for (i in (seq.size - 1)..0)
-            if (predicate(seq[i])) return false
+    private inline fun MutableList<Pair<() -> LiveData<T>?, ((T?) -> Any?)?>>.fails(predicate: (Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) -> Boolean): Boolean {
+        for (i in (size - 1)..0)
+            if (predicate(this[i])) return false
         return true
     }
-
     private val before
         get() = if (ln < 0) 0 else ln
     private val after
