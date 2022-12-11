@@ -70,11 +70,11 @@ interface LiveDataRunner<T> : Observer<T> {
         attach(after, step)
     }
     fun attachOnceAfter(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
-        (ln + 1).let {
-            if (it < seq.size && seq[it].isNotSameStep(step))
-                attach(it, step)
-            else
-                attach(step)
+        (ln + 1).let { index ->
+            when {
+                index < seq.size -> if (seq[index].isNotSameStep(step)) attach(index, step)
+                else -> attach(step)
+            }
         }
     }
     fun attachAfter(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null): () -> LiveData<T>? {
