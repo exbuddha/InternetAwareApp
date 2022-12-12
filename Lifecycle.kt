@@ -207,10 +207,10 @@ interface LiveDataRunner<T> : Observer<T> {
 
     private fun isNotAttached(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
         none { it.isSameStep(step) }
-    private fun isNotAttached(block: (T?) -> Any?) =
-        none { it.second === block }
     private fun isNotAttached(index: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
         none(index) { it.isSameStep(step) }
+    private fun isNotAttached(block: (T?) -> Any?) =
+        none { it.second === block }
     private fun isNotAttached(index: Int, block: (T?) -> Any?) =
         none(index) { it.second === block }
     private fun <T> Pair<() -> LiveData<T>?, ((T?) -> Any?)?>.isSameStep(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
@@ -218,16 +218,13 @@ interface LiveDataRunner<T> : Observer<T> {
     private fun <T> Pair<() -> LiveData<T>?, ((T?) -> Any?)?>.isNotSameStep(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
         this !== step || first !== step.first || second != step.second
     private inline fun none(predicate: (Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) -> Boolean) =
-        if (seq.size > 0)
-            seq.fails(predicate)
-        else true
-    private inline fun none(index: Int, predicate: (Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) -> Boolean) =
-        if (seq.size > 0) when {
-            index < seq.size / 2 -> seq.none(predicate)
-            else -> seq.fails(predicate)
-        }
-        else true
+        seq.fails(predicate)
+    private inline fun none(index: Int, predicate: (Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) -> Boolean) = when {
+        index < seq.size / 2 -> seq.none(predicate)
+        else -> seq.fails(predicate)
+    }
     private inline fun MutableList<Pair<() -> LiveData<T>?, ((T?) -> Any?)?>>.fails(predicate: (Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) -> Boolean): Boolean {
+        if (seq.size == 0) return true
         for (i in (size - 1)..0)
             if (predicate(this[i])) return false
         return true
