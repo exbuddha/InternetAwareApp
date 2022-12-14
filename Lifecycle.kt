@@ -212,7 +212,7 @@ interface LiveDataRunner<T> : Observer<T> {
     val nullStep: () -> LiveData<T>?
 
     val leading
-        get() = 0 until  ln
+        get() = 0 until ln
     val trailing
         get() = (ln + 1) until seq.size
 
