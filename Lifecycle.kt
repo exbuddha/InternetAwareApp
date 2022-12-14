@@ -265,7 +265,7 @@ interface LiveDataRunner<T> : Observer<T> {
     }
     private inline fun MutableList<Pair<() -> LiveData<T>?, ((T?) -> Any?)?>>.fails(predicate: (Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) -> Boolean): Boolean {
         if (size == 0) return true
-        for (i in (size - 1)..0)
+        for (i in (size - 1) downTo 0)
             if (predicate(this[i])) return false
         return true
     }
