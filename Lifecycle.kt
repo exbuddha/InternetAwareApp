@@ -207,29 +207,23 @@ interface LiveDataRunner<T> : Observer<T> {
     private fun isNotAttached(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
         seq.fails { it.isSameStep(step) }
     private fun isNotAttached(range: IntRange, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>): Boolean {
-        range.forEach { index ->
-            if (seq[index].isSameStep(step)) return false
-        }
+        range.forEach { if (seq[it].isSameStep(step)) return false }
         return true
     }
     private fun isNotAttached(first: Int, last: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>): Boolean {
-        for (index in first..last) {
-            if (seq[index].isSameStep(step)) return false
-        }
+        for (i in first..last) if (seq[i].isSameStep(step)) return false
         return true
     }
     private fun isNotAttached(index: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
         none(index) { it.isSameStep(step) }
     private fun isNotAttached(range: IntRange, index: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
-        if (range.isEmpty())
-            true
+        if (range.isEmpty()) true
         else when {
             index - range.first <= range.last - index -> range.none { seq[it].isSameStep(step) }
             else -> range.fails { seq[it].isSameStep(step) }
         }
     private fun isNotAttached(first: Int, last: Int, index: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
-        if (first < last)
-            true
+        if (first < last) true
         else when {
             index - first <= last - index -> seq.none { it.isSameStep(step) }
             else -> seq.fails { it.isSameStep(step) }
@@ -237,29 +231,23 @@ interface LiveDataRunner<T> : Observer<T> {
     private fun isNotAttached(block: (T?) -> Any?) =
         seq.fails { it.second === block }
     private fun isNotAttached(range: IntRange, block: (T?) -> Any?): Boolean {
-        range.forEach { index ->
-            if (seq[index].second === block) return false
-        }
+        range.forEach { if (seq[it].second === block) return false }
         return true
     }
     private fun isNotAttached(first: Int, last: Int, block: (T?) -> Any?): Boolean {
-        for (index in first..last) {
-            if (seq[index].second === block) return false
-        }
+        for (i in first..last) if (seq[i].second === block) return false
         return true
     }
     private fun isNotAttached(index: Int, block: (T?) -> Any?) =
         none(index) { it.second === block }
     private fun isNotAttached(range: IntRange, index: Int, block: (T?) -> Any?) =
-        if (range.isEmpty())
-            true
+        if (range.isEmpty()) true
         else when {
             index - range.first <= range.last - index -> range.none { seq[it].second === block }
             else -> range.fails { seq[it].second === block }
         }
     private fun isNotAttached(first: Int, last: Int, index: Int, block: (T?) -> Any?) =
-        if (first < last)
-            true
+        if (first < last) true
         else when {
             index - first <= last - index -> seq.none { it.second === block }
             else -> seq.fails { it.second === block }
@@ -270,14 +258,11 @@ interface LiveDataRunner<T> : Observer<T> {
     }
     private inline fun MutableList<Pair<() -> LiveData<T>?, ((T?) -> Any?)?>>.fails(predicate: (Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) -> Boolean): Boolean {
         if (size == 0) return true
-        for (i in (size - 1) downTo 0)
-            if (predicate(this[i])) return false
+        for (i in (size - 1) downTo 0) if (predicate(this[i])) return false
         return true
     }
     private inline fun IntRange.fails(predicate: (Int) -> Boolean): Boolean {
-        reversed().forEach { index ->
-            if (predicate(index)) return false
-        }
+        reversed().forEach { if (predicate(it)) return false }
         return true
     }
 
