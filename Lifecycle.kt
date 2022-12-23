@@ -81,15 +81,9 @@ interface LiveDataRunner<T> : Observer<T> {
         if (isNotAttached(range, step))
             attach(step)
     }
-    fun attach(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null): () -> LiveData<T>? {
-        fun async() = liveData(block = step)
-        attach(Pair(::async, capture))
-        return ::async
-    }
-    fun attach(context: CoroutineContext, step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null): () -> LiveData<T>? {
-        fun async() = liveData(context, block = step)
-        attach(Pair(::async, capture))
-        return ::async
+    fun attachOnce(first: Int, last: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
+        if (isNotAttached(first, last, step))
+            attach(step)
     }
     fun attach(index: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
         if (index <= ln)
@@ -104,6 +98,32 @@ interface LiveDataRunner<T> : Observer<T> {
         if (isNotAttached(range, index, step))
             attach(index, step)
     }
+    fun attachOnce(first: Int, last: Int, index: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
+        if (isNotAttached(first, last, index, step))
+            attach(index, step)
+    }
+    fun attachBefore(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
+        attach(before, step)
+    }
+    fun attachOnceBefore(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
+        attachOnce(before, step)
+    }
+    fun attachAfter(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
+        attach(after, step)
+    }
+    fun attachOnceAfter(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
+        attachOnce(after, step)
+    }
+    fun attach(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null): () -> LiveData<T>? {
+        fun async() = liveData(block = step)
+        attach(Pair(::async, capture))
+        return ::async
+    }
+    fun attach(context: CoroutineContext, step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null): () -> LiveData<T>? {
+        fun async() = liveData(context, block = step)
+        attach(Pair(::async, capture))
+        return ::async
+    }
     fun attach(index: Int, step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null): () -> LiveData<T>? {
         fun async() = liveData(block = step)
         attach(index, Pair(::async, capture))
@@ -114,12 +134,6 @@ interface LiveDataRunner<T> : Observer<T> {
         attach(index, Pair(::async, capture))
         return ::async
     }
-    fun attachBefore(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
-        attach(before, step)
-    }
-    fun attachOnceBefore(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
-        attachOnce(before, step)
-    }
     fun attachBefore(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null): () -> LiveData<T>? {
         fun async() = liveData(block = step)
         attachBefore(Pair(::async, capture))
@@ -129,12 +143,6 @@ interface LiveDataRunner<T> : Observer<T> {
         fun async() = liveData(context, block = step)
         attachBefore(Pair(::async, capture))
         return ::async
-    }
-    fun attachAfter(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
-        attach(after, step)
-    }
-    fun attachOnceAfter(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) {
-        attachOnce(after, step)
     }
     fun attachAfter(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null): () -> LiveData<T>? {
         fun async() = liveData(block = step)
@@ -147,24 +155,6 @@ interface LiveDataRunner<T> : Observer<T> {
         return ::async
     }
 
-    fun io(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
-        attach(Dispatchers.IO, step, capture)
-    fun io(index: Int, step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
-        attach(index, Dispatchers.IO, step, capture)
-    fun ioBefore(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
-        attachBefore(Dispatchers.IO, step, capture)
-    fun ioAfter(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
-        attachAfter(Dispatchers.IO, step, capture)
-
-    fun unconfined(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
-        attach(Dispatchers.Unconfined, step, capture)
-    fun unconfined(index: Int, step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
-        attach(index, Dispatchers.Unconfined, step, capture)
-    fun unconfinedBefore(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
-        attachBefore(Dispatchers.Unconfined, step, capture)
-    fun unconfinedAfter(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
-        attachAfter(Dispatchers.Unconfined, step, capture)
-
     fun capture(block: (T?) -> Any?) {
         attach(nullStep to block)
     }
@@ -174,6 +164,10 @@ interface LiveDataRunner<T> : Observer<T> {
     }
     fun captureOnce(range: IntRange, block: (T?) -> Any?) {
         if (isNotAttached(range, block))
+            capture(block)
+    }
+    fun captureOnce(first: Int, last: Int, block: (T?) -> Any?) {
+        if (isNotAttached(first, last, block))
             capture(block)
     }
     fun capture(index: Int, block: (T?) -> Any?) {
@@ -187,48 +181,39 @@ interface LiveDataRunner<T> : Observer<T> {
         if (isNotAttached(range, index, block))
             capture(block)
     }
+    fun captureOnce(first: Int, last: Int, index: Int, block: (T?) -> Any?) {
+        if (isNotAttached(first, last, index, block))
+            capture(block)
+    }
     fun captureBefore(block: (T?) -> Any?) {
         attachBefore(nullStep to block)
     }
     fun captureOnceBefore(block: (T?) -> Any?) {
-        when {
-            ln > seq.size -> capture(block)
-            ln > 0 -> if (seq[ln - 1].second !== block) capture(ln, block)
-            ln == 0 -> if (seq[0].second !== block) capture(ln, block)
-            else -> capture(block)
-        }
+        captureOnce(before, block)
     }
     fun captureAfter(block: (T?) -> Any?) {
         attachAfter(nullStep to block)
     }
     fun captureOnceAfter(block: (T?) -> Any?) {
-        (ln + 1).let { index ->
-            when {
-                index < seq.size -> if (seq[index].second !== block) capture(index, block)
-                else -> capture(block)
-            }
-        }
+        captureOnce(after, block)
     }
     val nullStep: () -> LiveData<T>?
-
-    val leading
-        get() = 0 until ln
-    val trailing
-        get() = (ln + 1) until seq.size
 
     fun <T> Pair<() -> LiveData<T>?, ((T?) -> Any?)?>.isSameStep(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
         this === step || (first === step.first && second === step.second)
     fun <T> Pair<() -> LiveData<T>?, ((T?) -> Any?)?>.isNotSameStep(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
         this !== step || first !== step.first || second != step.second
 
-    private val before
-        get() = if (ln < 0) 0 else ln
-    private val after
-        get() = ln + 1
     private fun isNotAttached(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
         seq.fails { it.isSameStep(step) }
     private fun isNotAttached(range: IntRange, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>): Boolean {
         range.forEach { index ->
+            if (seq[index].isSameStep(step)) return false
+        }
+        return true
+    }
+    private fun isNotAttached(first: Int, last: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>): Boolean {
+        for (index in first..last) {
             if (seq[index].isSameStep(step)) return false
         }
         return true
@@ -242,10 +227,23 @@ interface LiveDataRunner<T> : Observer<T> {
             index - range.first <= range.last - index -> range.none { seq[it].isSameStep(step) }
             else -> range.fails { seq[it].isSameStep(step) }
         }
+    private fun isNotAttached(first: Int, last: Int, index: Int, step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
+        if (first < last)
+            true
+        else when {
+            index - first <= last - index -> seq.none { it.isSameStep(step) }
+            else -> seq.fails { it.isSameStep(step) }
+        }
     private fun isNotAttached(block: (T?) -> Any?) =
         seq.fails { it.second === block }
     private fun isNotAttached(range: IntRange, block: (T?) -> Any?): Boolean {
         range.forEach { index ->
+            if (seq[index].second === block) return false
+        }
+        return true
+    }
+    private fun isNotAttached(first: Int, last: Int, block: (T?) -> Any?): Boolean {
+        for (index in first..last) {
             if (seq[index].second === block) return false
         }
         return true
@@ -258,6 +256,13 @@ interface LiveDataRunner<T> : Observer<T> {
         else when {
             index - range.first <= range.last - index -> range.none { seq[it].second === block }
             else -> range.fails { seq[it].second === block }
+        }
+    private fun isNotAttached(first: Int, last: Int, index: Int, block: (T?) -> Any?) =
+        if (first < last)
+            true
+        else when {
+            index - first <= last - index -> seq.none { it.second === block }
+            else -> seq.fails { it.second === block }
         }
     private inline fun none(index: Int, predicate: (Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) -> Boolean) = when {
         index < seq.size / 2 -> seq.none(predicate)
@@ -275,6 +280,24 @@ interface LiveDataRunner<T> : Observer<T> {
         }
         return true
     }
+
+    val leading
+        get() = 0 until if (ln < seq.size) ln else seq.size
+    val trailing
+        get() = (if (ln < 0) 0 else ln + 1) until seq.size
+
+    private val before
+        get() = when {
+            ln <= 0 -> 0
+            ln < seq.size -> ln - 1
+            else -> seq.size
+        }
+    private val after
+        get() = when {
+            ln < 0 -> 0
+            ln < seq.size -> ln + 1
+            else -> seq.size
+        }
 }
 
 class AutoResetException(msg: String? = null, cause: Throwable? = null) : RuntimeException(msg, cause)
