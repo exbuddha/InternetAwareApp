@@ -198,6 +198,24 @@ interface LiveDataRunner<T> : Observer<T> {
         captureOnce(after, block)
     }
     val nullStep: () -> LiveData<T>?
+    
+    fun io(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
+        attach(Dispatchers.IO, step, capture)
+    fun io(index: Int, step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
+        attach(index, Dispatchers.IO, step, capture)
+    fun ioBefore(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
+        attachBefore(Dispatchers.IO, step, capture)
+    fun ioAfter(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
+        attachAfter(Dispatchers.IO, step, capture)
+
+    fun unconfined(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
+        attach(Dispatchers.Unconfined, step, capture)
+    fun unconfined(index: Int, step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
+        attach(index, Dispatchers.Unconfined, step, capture)
+    fun unconfinedBefore(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
+        attachBefore(Dispatchers.Unconfined, step, capture)
+    fun unconfinedAfter(step: suspend LiveDataScope<T>.() -> Unit, capture: ((T?) -> Any?)? = null) =
+        attachAfter(Dispatchers.Unconfined, step, capture)
 
     fun <T> Pair<() -> LiveData<T>?, ((T?) -> Any?)?>.isSameStep(step: Pair<() -> LiveData<T>?, ((T?) -> Any?)?>) =
         this === step || (first === step.first && second === step.second)
