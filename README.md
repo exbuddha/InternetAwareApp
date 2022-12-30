@@ -1,10 +1,10 @@
 # InternetAwareApp
 
-This sample code demonstrates an Android application that lazily updates the network connectivity status from the device
-and a remote server on a background IO thread. A simple probing loop is launched every time the activity is resumed.
-The delay times can be adjusted to control intervals for waking up and for testing the remote server. There are
+This sample code demonstrates an Android application that updates the network connectivity status from the device
+and a remote server on a background IO thread. A simple probing loop is launched every time the activity is resumed,
+with adjustable delay times to control intervals for waking up and for testing the remote server. There are
 two separate network-related sources of information. One is provided by the system's default network capabilities
-callback, and the other is from probing the remote server connection. There is a hard limit of 3 seconds for running the test.
+callback, and the other is from testing the remote server connection. There is a hard limit of 3 seconds for running the test.
 
 One challenge that the code solves is to postpone work to a later time until a session id is acquired from the database.
 In order to achieve this while keeping the design restriction to never block the main thread in mind, a runner
